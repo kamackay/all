@@ -18,7 +18,7 @@ const (
 
 type Opts struct {
 	Verbose   bool   `short:"v" help:"Verbose"`
-	Directory string `arg optional help:"Directory" default:"."`
+	Directory string `arg:"" optional:"" help:"Directory" default:"."`
 	Humanize  bool   `short:"h" help:"Humanize File Sizes"`
 }
 
@@ -97,7 +97,7 @@ func printFolder(dir string, index int, opts Opts) {
 }
 
 func main() {
-	var opts *Opts
+	var opts Opts
 	ctx := kong.Parse(&opts)
 
 	start := time.Now()
@@ -119,7 +119,7 @@ func main() {
 		return
 	}
 
-	printFolder(base, 0, *opts)
+	printFolder(base, 0, opts)
 
 	if time.Now().Sub(start) > 100*time.Millisecond {
 		fmt.Printf("Done in %s\n", humanize.RelTime(start, time.Now(), "", ""))
