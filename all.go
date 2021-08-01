@@ -19,7 +19,7 @@ const (
 type Opts struct {
 	Verbose   bool   `short:"v" help:"Verbose"`
 	Directory string `arg:"" optional:"" help:"Directory" default:"."`
-	Humanize  bool   `short:"h" help:"Humanize File Sizes"`
+	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 }
 
 func getFiles(path string) []fs.FileInfo {
@@ -66,7 +66,7 @@ func indentation(index int) string {
 	return str + "| "
 }
 
-func formatSize(file string, getter func(string)uint64, human bool) string {
+func formatSize(file string, getter func(string) uint64, human bool) string {
 	sizeBytes := getter(file)
 	if human {
 		return humanize.Bytes(sizeBytes)
