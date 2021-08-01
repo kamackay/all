@@ -1,0 +1,54 @@
+name: All
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Release on GitHub
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set env
+        run: |
+          echo "GOPATH=$(dirname $GITHUB_WORKSPACE)" >> $GITHUB_ENV
+          echo "$(dirname $GITHUB_WORKSPACE)/bin" >> $GITHUB_PATH
+
+      - name: Get Pkger
+        run: |
+          go get github.com/markbates/pkger/cmd/pkger
+          pkger
+
+      - name: Set Develop App Version
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          echo "APP_VERSION=$(go run . --version)-alpha.${{ github.run_number }}" >> $GITHUB_ENV
+          echo "FORMULA_SUFFIX=-dev" >> $GITHUB_ENV
+
+      - name: Set Main App Version
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "APP_VERSION=$(echo $(go run . --version))" >> $GITHUB_ENV
+          echo "FORMULA_SUFFIX=" >> $GITHUB_ENV
+
+      - name: Push tag
+        run: |
+          git config user.name $(git log -1 --pretty=format:%an)
+          git config user.email $(git log -1 --pretty=format:%ae)
+          git tag -a ${{ env.APP_VERSION }} -m "Tagging for goreleaser" $(git log -1 --pretty=format:%h)
+          git push origin ${tag}
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --rm-dist --skip-validate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN_BREW: ${{ secrets.READONLY_GITHUB_TOKEN }}
+          APP_VERSION: ${{ env.APP_VERSION}}
+          FORMULA_SUFFIX: ${{ env.FORMULA_SUFFIX}}
