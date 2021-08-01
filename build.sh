@@ -1,1 +1,1 @@
-go build all.go
+go build all.go && ./all ~/all
