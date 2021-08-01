@@ -1,1 +1,1 @@
-go build all.go && ./all ~/all
+go build all.go && mv ./all ~/all
