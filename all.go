@@ -84,7 +84,6 @@ func printPath(file string, index int, isDir bool, human bool) {
 }
 
 func printFolder(dir string, index int, opts Opts) {
-	fmt.Printf("%s%s\n", indentation(index), dir)
 	files := getFiles(dir)
 	for _, file := range files {
 		if file.IsDir() {
