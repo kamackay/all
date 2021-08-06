@@ -14,12 +14,14 @@ import (
 
 const (
 	Tab = "  "
+	Gig = 1000000000
 )
 
 type Opts struct {
 	Verbose   bool   `short:"v" help:"Verbose"`
 	Directory string `arg:"" optional:"" help:"Directory" default:"."`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
+	Large     bool   `short:"G" help:"Only print files over 1 GB"`
 }
 
 func getFiles(path string) []fs.FileInfo {
@@ -66,8 +68,7 @@ func indentation(index int) string {
 	return str + "| "
 }
 
-func formatSize(file string, getter func(string) uint64, human bool) string {
-	sizeBytes := getter(file)
+func formatSize(file string, sizeBytes uint64, human bool) string {
 	if human {
 		return humanize.Bytes(sizeBytes)
 	} else {
@@ -75,22 +76,28 @@ func formatSize(file string, getter func(string) uint64, human bool) string {
 	}
 }
 
-func printPath(file string, index int, isDir bool, human bool) {
+func printPath(file string, index int, isDir bool, opts Opts) {
+	var size uint64
 	if isDir {
-		fmt.Printf("%s%s - %s\n", indentation(index), formatSize(file, getFolderSize, human), file)
+		size = getFolderSize(file)
 	} else {
-		fmt.Printf("%s%s - %s\n", indentation(index), formatSize(file, getFileSize, human), file)
+		size = getFileSize(file)
 	}
+	if opts.Large && size < Gig {
+		// File is less than a gig, quit
+		return
+	}
+	fmt.Printf("%s%s - %s\n", indentation(index), formatSize(file, size, opts.Humanize), file)
 }
 
 func printFolder(dir string, index int, opts Opts) {
 	files := getFiles(dir)
 	for _, file := range files {
 		if file.IsDir() {
-			printPath(path.Join(dir, file.Name()), index, true, opts.Humanize)
+			printPath(path.Join(dir, file.Name()), index, true, opts)
 			printFolder(path.Join(dir, file.Name()), index+1, opts)
 		} else {
-			printPath(path.Join(dir, file.Name()), index, false, opts.Humanize)
+			printPath(path.Join(dir, file.Name()), index, false, opts)
 		}
 	}
 }
