@@ -9,6 +9,7 @@ import (
 	"gitlab.com/kamackay/all/utils"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 )
 
@@ -51,6 +52,9 @@ func (b *Browser) getFiles() {
 		} else {
 			l.Print(fmt.Sprintf("Error Getting Size: %+v\n", err))
 		}
+		sort.Slice(fileList, func(i, j int) bool {
+			return fileList[i].Size > fileList[j].Size
+		})
 		fileList = append([]File{{
 			Path: parentPath,
 			Size: parentSize,
