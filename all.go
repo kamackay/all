@@ -21,7 +21,7 @@ const (
 type Opts struct {
 	Browser   bool   `short:"b" help:"Run Browser"`
 	Verbose   bool   `short:"v" help:"Verbose"`
-	Directory string `short:"d" help:"Directory" default:"."`
+	Directory string `arg:"d" help:"Directory" default:"."`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
 }
