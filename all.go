@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/alecthomas/kong"
 	"github.com/dustin/go-humanize"
-	"io/fs"
-	"io/ioutil"
+	"gitlab.com/kamackay/all/browser"
+	"gitlab.com/kamackay/all/files"
+	"gitlab.com/kamackay/all/l"
+	"gitlab.com/kamackay/all/utils"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,86 +15,34 @@ import (
 )
 
 const (
-	Tab = "  "
 	Gig = 1000000000
 )
 
 type Opts struct {
+	Browser   bool   `short:"b" help:"Run Browser"`
 	Verbose   bool   `short:"v" help:"Verbose"`
-	Directory string `arg:"" optional:"" help:"Directory" default:"."`
+	Directory string `short:"d" help:"Directory" default:"."`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
-}
-
-func getFiles(path string) []fs.FileInfo {
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		fmt.Printf("%+v\n", err)
-		return make([]fs.FileInfo, 0)
-	}
-	return files
-}
-
-func getFolderSize(path string) uint64 {
-	var size uint64
-	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			size += uint64(info.Size())
-		}
-		return err
-	})
-	if err != nil {
-		return 0
-	}
-	return size
-}
-
-func getFileSize(file string) uint64 {
-	fi, err := os.Stat(file)
-	if err != nil {
-		return 0
-	}
-	// get the size
-	size := fi.Size()
-	return uint64(size)
-}
-
-func indentation(index int) string {
-	str := ""
-	for i := 1; i < index; i++ {
-		str += Tab
-	}
-	return str + "| "
-}
-
-func formatSize(file string, sizeBytes uint64, human bool) string {
-	if human {
-		return humanize.Bytes(sizeBytes)
-	} else {
-		return fmt.Sprintf("%d", sizeBytes)
-	}
 }
 
 func printPath(file string, index int, isDir bool, opts Opts) {
 	var size uint64
 	if isDir {
-		size = getFolderSize(file)
+		size = files.GetFolderSize(file)
 	} else {
-		size = getFileSize(file)
+		size = files.GetFileSize(file)
 	}
 	if opts.Large && size < Gig {
 		// File is less than a gig, quit
 		return
 	}
-	fmt.Printf("%s%s - %s\n", indentation(index), formatSize(file, size, opts.Humanize), file)
+	fmt.Printf("%s%s - %s\n", utils.Indentation(index), utils.FormatSize(size, opts.Humanize), file)
 }
 
 func printFolder(dir string, index int, opts Opts) {
-	files := getFiles(dir)
-	for _, file := range files {
+	fs := files.GetFiles(dir)
+	for _, file := range fs {
 		if file.IsDir() {
 			printPath(path.Join(dir, file.Name()), index, true, opts)
 			printFolder(path.Join(dir, file.Name()), index+1, opts)
@@ -122,6 +72,18 @@ func main() {
 	base, err := filepath.Abs(dir)
 	if err != nil {
 		fmt.Printf("%+v\n", err)
+		return
+	}
+
+	if opts.Browser {
+		// Run Browser
+		l.Print("Running Browser!")
+		b, err := browser.New(base)
+		if err != nil {
+			fmt.Printf("%+v\n", err)
+			return
+		}
+		b.Run()
 		return
 	}
 
