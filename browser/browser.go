@@ -66,7 +66,6 @@ func (b *Browser) getFiles() {
 }
 
 func New(root string) (*Browser, error) {
-	_ = os.Remove(l.File)
 	err := termbox.Init()
 	if err != nil {
 		return nil, err
@@ -153,11 +152,15 @@ func (b *Browser) keyPress(e termbox.Event) {
 		b.Select()
 		break
 	default:
-		switch string(e.Ch) {
-		case "[":
+		switch e.Ch {
+		case 'r':
+			// Refresh
+			b.getFiles()
+			break
+		case '[':
 			b.setIndex(0)
 			break
-		case "]":
+		case ']':
 			b.setIndex(len(b.Files) - 1)
 			break
 		default:
