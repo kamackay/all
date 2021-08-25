@@ -5,9 +5,11 @@ import (
 	"github.com/nsf/termbox-go"
 	"gitlab.com/kamackay/all/files"
 	"gitlab.com/kamackay/all/l"
+	"gitlab.com/kamackay/all/model"
 	"gitlab.com/kamackay/all/utils"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 type Browser struct {
@@ -15,34 +17,48 @@ type Browser struct {
 	Width, Height int
 	SelectedLine  int
 	Files         []File
-	StartIndex int
+	fileLoadMutex sync.Mutex
+	loading       *model.LoadingInfo
 }
 
-func getFiles(path string) []File {
-	l.Print(fmt.Sprintf("Pulling files for %s", path))
-	fs := files.GetFiles(path)
-	fileList := make([]File, len(fs))
-	l.Print(fmt.Sprintf("Pulled %d files for %s", len(fs), path))
-	for x, f := range fs {
-		filename := filepath.Join(path, f.Name())
-		fileList[x] = File{
-			Path: filename,
-			Size: files.GetSize(path, f),
+func (b *Browser) getFiles() {
+	path := b.path
+	go func() {
+		b.fileLoadMutex.Lock()
+		defer b.fileLoadMutex.Unlock()
+		l.Print(fmt.Sprintf("Pulling files for %s", path))
+		fs := files.GetFiles(path)
+		fileList := make([]File, len(fs))
+		l.Print(fmt.Sprintf("Pulled %d files for %s", len(fs), path))
+		b.loading = &model.LoadingInfo{
+			Item:  0,
+			Total: len(fs),
 		}
-	}
-	parentPath := filepath.Join(path, "..")
-	parent, err := os.Stat(parentPath)
-	var parentSize uint64
-	if err == nil {
-		parentSize = files.GetSize(parentPath, parent)
-	} else {
-		l.Print(fmt.Sprintf("Error Getting Size: %+v\n", err))
-	}
-	fileList = append([]File{{
-		Path: parentPath,
-		Size: parentSize,
-	}}, fileList...)
-	return fileList
+		for x, f := range fs {
+			filename := filepath.Join(path, f.Name())
+			fileList[x] = File{
+				Path: filename,
+				Size: files.GetSize(path, f),
+			}
+			b.loading.Item = x
+			b.Render()
+		}
+		parentPath := filepath.Join(path, "..")
+		parent, err := os.Stat(parentPath)
+		var parentSize uint64
+		if err == nil {
+			parentSize = files.GetSize(parentPath, parent)
+		} else {
+			l.Print(fmt.Sprintf("Error Getting Size: %+v\n", err))
+		}
+		fileList = append([]File{{
+			Path: parentPath,
+			Size: parentSize,
+		}}, fileList...)
+		b.loading = nil
+		b.Files = fileList
+		b.Render()
+	}()
 }
 
 func New(root string) (*Browser, error) {
@@ -57,9 +73,8 @@ func New(root string) (*Browser, error) {
 		Width:        w,
 		Height:       h,
 		SelectedLine: 0,
-		StartIndex: 0,
-		Files:        getFiles(root),
 	}
+	b.getFiles()
 	b.setSize(h, w)
 	return b, nil
 }
@@ -79,8 +94,19 @@ func (b *Browser) Run() {
 
 func (b *Browser) Render() {
 	l.Error(termbox.Clear(termbox.ColorWhite, termbox.ColorDefault))
+	defer termbox.Flush()
+	if b.loading != nil {
+		text := fmt.Sprintf("Loading... %d of %d", b.loading.Item, b.loading.Total)
+		for x := 0; x < len(text); x++ {
+			termbox.SetCell(x, 2, rune(text[x]), termbox.ColorGreen, termbox.ColorBlack)
+		}
+		return
+	}
 	line := 0
-	for y := b.StartIndex; y < len(b.Files); y++ {
+	lastItem := utils.Min(len(b.Files), b.Height+b.SelectedLine)
+	start := b.SelectedLine
+	l.Print(fmt.Sprintf("Printing from %d to %d", start, lastItem))
+	for y := start; y < lastItem; y++ {
 		file := b.Files[y]
 		text := fmt.Sprintf("%s -> %s", file.Path, utils.FormatSize(file.Size, true))
 		fg := termbox.ColorGreen
@@ -93,10 +119,6 @@ func (b *Browser) Render() {
 			termbox.SetCell(x, line, rune(text[x]), fg, bg)
 		}
 		line++
-	}
-	err := termbox.Flush()
-	if err != nil {
-		l.Print(fmt.Sprintf("Error: %+v\n", err))
 	}
 }
 
@@ -114,19 +136,29 @@ func (b *Browser) Poll() termbox.Event {
 func (b *Browser) keyPress(e termbox.Event) {
 	switch e.Key {
 	case termbox.KeyArrowUp:
-		b.SelectedLine = int(utils.Max(int64(b.SelectedLine-1), 0))
-		if b.SelectedLine < b.StartIndex {
-			b.StartIndex = b.SelectedLine
-		}
+		b.setIndex(b.SelectedLine - 1)
 		break
 	case termbox.KeyArrowDown:
-		b.SelectedLine = int(utils.Min(int64(b.SelectedLine+1), int64(len(b.Files)-1)))
-		if b.SelectedLine >= b.Height {
-			b.StartIndex++
-		}
+		b.setIndex(b.SelectedLine + 1)
+		break
+	case termbox.KeyArrowLeft:
+		b.setIndex(0)
+		b.Select()
 		break
 	case termbox.KeyEnter:
 		b.Select()
+		break
+	default:
+		switch string(e.Ch) {
+		case "[":
+			b.setIndex(0)
+			break
+		case "]":
+			b.setIndex(len(b.Files) - 1)
+			break
+		default:
+			l.Print(fmt.Sprintf("Unhandled Press on %s", string(e.Ch)))
+		}
 		break
 	}
 }
@@ -139,14 +171,23 @@ func (b *Browser) Close() {
 func (b *Browser) Select() {
 	newPath := b.Files[b.SelectedLine].Path
 	l.Print("Selecting " + newPath)
-	b.Files = getFiles(newPath)
 	b.path = newPath
-	b.SelectedLine = 0
-	b.StartIndex = 0
+	b.setIndex(0)
+	b.getFiles()
 }
 
 func (b *Browser) setSize(height int, width int) {
 	l.Print(fmt.Sprintf("Setting Size to %dx%d", height, width))
 	b.Height = height
 	b.Width = width
+}
+
+func (b *Browser) setIndex(i int) {
+	if i < 0 {
+		i = 0
+	}
+	if i >= len(b.Files) {
+		i = len(b.Files) - 1
+	}
+	b.SelectedLine = i
 }
