@@ -8,7 +8,6 @@ import (
 	"gitlab.com/kamackay/all/utils"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 type Browser struct {
@@ -16,6 +15,7 @@ type Browser struct {
 	Width, Height int
 	SelectedLine  int
 	Files         []File
+	StartIndex int
 }
 
 func getFiles(path string) []File {
@@ -46,6 +46,7 @@ func getFiles(path string) []File {
 }
 
 func New(root string) (*Browser, error) {
+	_ = os.Remove(l.File)
 	err := termbox.Init()
 	if err != nil {
 		return nil, err
@@ -56,9 +57,10 @@ func New(root string) (*Browser, error) {
 		Width:        w,
 		Height:       h,
 		SelectedLine: 0,
+		StartIndex: 0,
 		Files:        getFiles(root),
 	}
-	time.AfterFunc(time.Minute, b.Close)
+	b.setSize(h, w)
 	return b, nil
 }
 
@@ -77,7 +79,9 @@ func (b *Browser) Run() {
 
 func (b *Browser) Render() {
 	l.Error(termbox.Clear(termbox.ColorWhite, termbox.ColorDefault))
-	for y, file := range b.Files {
+	line := 0
+	for y := b.StartIndex; y < len(b.Files); y++ {
+		file := b.Files[y]
 		text := fmt.Sprintf("%s -> %s", file.Path, utils.FormatSize(file.Size, true))
 		fg := termbox.ColorGreen
 		bg := termbox.ColorBlack
@@ -86,8 +90,9 @@ func (b *Browser) Render() {
 			bg = termbox.ColorGreen
 		}
 		for x := 0; x < len(text); x++ {
-			termbox.SetCell(x, y, rune(text[x]), fg, bg)
+			termbox.SetCell(x, line, rune(text[x]), fg, bg)
 		}
+		line++
 	}
 	err := termbox.Flush()
 	if err != nil {
@@ -100,6 +105,8 @@ func (b *Browser) Poll() termbox.Event {
 		switch e := termbox.PollEvent(); e.Type {
 		case termbox.EventKey:
 			return e
+		case termbox.EventResize:
+			b.setSize(e.Height, e.Width)
 		}
 	}
 }
@@ -108,9 +115,15 @@ func (b *Browser) keyPress(e termbox.Event) {
 	switch e.Key {
 	case termbox.KeyArrowUp:
 		b.SelectedLine = int(utils.Max(int64(b.SelectedLine-1), 0))
+		if b.SelectedLine < b.StartIndex {
+			b.StartIndex = b.SelectedLine
+		}
 		break
 	case termbox.KeyArrowDown:
 		b.SelectedLine = int(utils.Min(int64(b.SelectedLine+1), int64(len(b.Files)-1)))
+		if b.SelectedLine >= b.Height {
+			b.StartIndex++
+		}
 		break
 	case termbox.KeyEnter:
 		b.Select()
@@ -129,4 +142,11 @@ func (b *Browser) Select() {
 	b.Files = getFiles(newPath)
 	b.path = newPath
 	b.SelectedLine = 0
+	b.StartIndex = 0
+}
+
+func (b *Browser) setSize(height int, width int) {
+	l.Print(fmt.Sprintf("Setting Size to %dx%d", height, width))
+	b.Height = height
+	b.Width = width
 }
