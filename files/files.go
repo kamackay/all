@@ -52,3 +52,17 @@ func GetFolderSize(path string) uint64 {
 	}
 	return size
 }
+
+func ReadStart(path string, size int) (string, error) {
+	r, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer r.Close()
+	header := make([]byte, size)
+	_, err = r.Read(header)
+	if err != nil {
+		return "", err
+	}
+	return string(header), nil
+}

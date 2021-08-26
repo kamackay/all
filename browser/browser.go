@@ -10,7 +10,13 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
+)
+
+const (
+	green = termbox.ColorGreen
+	black = termbox.ColorBlack
 )
 
 type Browser struct {
@@ -20,7 +26,7 @@ type Browser struct {
 	Files         []File
 	fileLoadMutex sync.Mutex
 	loading       *model.LoadingInfo
-	file          bool
+	file          *model.FileMode
 	pollChan      chan *termbox.Event
 }
 
@@ -30,10 +36,14 @@ func (b *Browser) getFiles() {
 		b.fileLoadMutex.Lock()
 		defer b.fileLoadMutex.Unlock()
 		defer b.update()
-		b.file = false
+		b.file = nil
 		info, _ := os.Stat(path)
 		if info != nil && !info.IsDir() {
-			b.file = true
+			start, err := files.ReadStart(path, b.Height * b.Width)
+			if err != nil {
+				start = fmt.Sprintf("Error Reading file: %+v", err)
+			}
+			b.file = &model.FileMode{Contents: start}
 			b.update()
 			return
 		}
@@ -46,6 +56,8 @@ func (b *Browser) getFiles() {
 			Total: len(fs),
 		}
 		for x, f := range fs {
+			b.loading.Current = f.Name()
+			b.update()
 			filename := filepath.Join(path, f.Name())
 			fileList[x] = File{
 				Path: filename,
@@ -112,12 +124,15 @@ func (b *Browser) Render() {
 	defer termbox.Flush()
 	height := b.Height - 1
 	if b.loading != nil {
-		text := fmt.Sprintf("Loading... %d of %d", b.loading.Item, b.loading.Total)
-		b.drawString(text, 8, termbox.ColorGreen, termbox.ColorBlack)
+		text := fmt.Sprintf("Loading... %d of %d, currently: %s", b.loading.Item, b.loading.Total, b.loading.Current)
+		b.drawString(text, 8, green, black)
 		return
 	}
-	if b.file {
-		b.drawString("You selected a file. That behavior is in the works", 8, termbox.ColorLightYellow, termbox.ColorBlack)
+	if b.file != nil {
+		lines := strings.Split(b.file.Contents, "\n")
+		for x, line := range lines {
+			b.drawString(line, x+2, green, black)
+		}
 		return
 	}
 	line := 1
@@ -128,11 +143,11 @@ func (b *Browser) Render() {
 	for y := start; y < lastItem; y++ {
 		file := b.Files[y]
 		text := fmt.Sprintf("%s -> %s", file.Path, utils.FormatSize(file.Size, true))
-		fg := termbox.ColorGreen
-		bg := termbox.ColorBlack
+		fg := green
+		bg := black
 		if y == b.SelectedLine {
-			fg = termbox.ColorBlack
-			bg = termbox.ColorGreen
+			fg = black
+			bg = green
 		}
 		b.drawString(text, line, fg, bg)
 		line++
@@ -177,6 +192,12 @@ func (b *Browser) keyPress(e termbox.Event) {
 		break
 	default:
 		switch e.Ch {
+		case '~':
+			// Set to Home Path
+			dirname, err := os.UserHomeDir()
+			l.Error(err)
+			b.setPath(dirname)
+			break
 		case 'r':
 			// Refresh
 			b.getFiles()
@@ -208,12 +229,16 @@ func (b *Browser) close() {
 	termbox.Close()
 }
 
+func (b *Browser) setPath(path string) {
+	b.path = path
+	b.setIndex(0)
+	b.getFiles()
+}
+
 func (b *Browser) Select() {
 	newPath := b.Files[b.SelectedLine].Path
 	l.Print("Selecting " + newPath)
-	b.path = newPath
-	b.setIndex(0)
-	b.getFiles()
+	b.setPath(newPath)
 }
 
 func (b *Browser) setSize(height int, width int) {
