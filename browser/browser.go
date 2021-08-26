@@ -83,16 +83,24 @@ func New(root string) (*Browser, error) {
 }
 
 func (b *Browser) Run() {
-	defer b.Close()
-	for {
-		b.Render()
-		e := b.Poll()
-		if e.Ch == 'q' || e.Key == termbox.KeyCtrlC {
-			return
-		} else {
-			b.keyPress(e)
+	var lock sync.Mutex
+	go func() {
+		lock.Lock()
+		defer b.Close()
+		defer lock.Unlock()
+		for {
+			b.Render()
+			e := b.Poll()
+			if e.Ch == 'q' || e.Key == termbox.KeyCtrlC {
+				return
+			} else {
+				b.keyPress(e)
+			}
 		}
-	}
+	}()
+	// Await the goroutine above exiting
+	lock.Lock()
+	defer lock.Unlock()
 }
 
 func (b *Browser) Render() {
