@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
+	"time"
 )
 
 type Browser struct {
@@ -21,6 +22,7 @@ type Browser struct {
 	fileLoadMutex sync.Mutex
 	loading       *model.LoadingInfo
 	file          bool
+	pollChan      chan *termbox.Event
 }
 
 func (b *Browser) getFiles() {
@@ -28,11 +30,12 @@ func (b *Browser) getFiles() {
 	go func() {
 		b.fileLoadMutex.Lock()
 		defer b.fileLoadMutex.Unlock()
-		defer b.Render()
+		defer b.update()
 		b.file = false
 		info, _ := os.Stat(path)
 		if info != nil && !info.IsDir() {
 			b.file = true
+			b.update()
 			return
 		}
 		l.Print(fmt.Sprintf("Pulling files for %s", path))
@@ -50,7 +53,7 @@ func (b *Browser) getFiles() {
 				Size: files.GetSize(path, f),
 			}
 			b.loading.Item = x
-			b.Render()
+			b.update()
 		}
 
 		sort.Slice(fileList, func(i, j int) bool {
@@ -75,6 +78,7 @@ func New(root string) (*Browser, error) {
 		Width:        w,
 		Height:       h,
 		SelectedLine: 0,
+		pollChan:     make(chan *termbox.Event),
 	}
 	b.getFiles()
 	b.setSize(h, w)
@@ -82,24 +86,20 @@ func New(root string) (*Browser, error) {
 }
 
 func (b *Browser) Run() {
-	var lock sync.Mutex
-	go func() {
-		lock.Lock()
-		defer b.Close()
-		defer lock.Unlock()
-		for {
-			b.Render()
-			e := b.Poll()
-			if e.Ch == 'q' || e.Key == termbox.KeyCtrlC {
-				return
-			} else {
-				b.keyPress(e)
-			}
+	time.AfterFunc(time.Minute, b.kill)
+	defer b.close()
+	go b.poll()
+	for {
+		b.Render()
+		e := <-b.pollChan
+		if e == nil {
+			continue
+		} else if e.Ch == 'q' || e.Key == termbox.KeyCtrlC {
+			return
+		} else {
+			b.keyPress(*e)
 		}
-	}()
-	// Await the goroutine above exiting
-	lock.Lock()
-	defer lock.Unlock()
+	}
 }
 
 func (b *Browser) drawString(line string, y int, fg, bg termbox.Attribute) {
@@ -118,6 +118,7 @@ func (b *Browser) Render() {
 		return
 	}
 	if b.file {
+		l.Print("Showing file TODO text")
 		b.drawString("You selected a file. That behavior is in the works", 8, termbox.ColorLightYellow, termbox.ColorBlack)
 		return
 	}
@@ -140,13 +141,23 @@ func (b *Browser) Render() {
 	}
 }
 
-func (b *Browser) Poll() termbox.Event {
+func (b *Browser) wipe() {
+	for y := 0; y < b.Height; y++ {
+		for x := 0; x < b.Width; x++ {
+			termbox.SetCell(x, y, ' ', termbox.ColorBlack, termbox.ColorBlack)
+		}
+	}
+}
+
+func (b *Browser) poll() {
 	for {
-		switch e := termbox.PollEvent(); e.Type {
+		event := termbox.PollEvent()
+		switch event.Type {
 		case termbox.EventKey:
-			return e
+			b.pollChan <- &event
 		case termbox.EventResize:
-			b.setSize(e.Height, e.Width)
+			b.setSize(event.Height, event.Width)
+			b.update()
 		}
 	}
 }
@@ -185,7 +196,16 @@ func (b *Browser) keyPress(e termbox.Event) {
 	}
 }
 
-func (b *Browser) Close() {
+func (b *Browser) update() {
+	b.pollChan <- nil
+}
+
+func (b *Browser) kill() {
+	b.close()
+	os.Exit(0)
+}
+
+func (b *Browser) close() {
 	l.Print("Closin'!")
 	termbox.Close()
 }
