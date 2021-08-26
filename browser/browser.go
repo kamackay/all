@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
-	"time"
 )
 
 type Browser struct {
@@ -86,7 +85,7 @@ func New(root string) (*Browser, error) {
 }
 
 func (b *Browser) Run() {
-	time.AfterFunc(time.Minute, b.kill)
+	//time.AfterFunc(time.Minute, b.kill)
 	defer b.close()
 	go b.poll()
 	for {
