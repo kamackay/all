@@ -39,12 +39,13 @@ func (b *Browser) getFiles() {
 		b.file = nil
 		info, _ := os.Stat(path)
 		if info != nil && !info.IsDir() {
-			start, err := files.ReadStart(path, b.Height * b.Width)
+			start, err := files.ReadStart(path, b.Height*b.Width)
 			if err != nil {
 				start = fmt.Sprintf("Error Reading file: %+v", err)
 			}
 			b.file = &model.FileMode{Contents: start}
 			b.update()
+			b.Files = []File{makeRelativeFile(path, "..")}
 			return
 		}
 		l.Print(fmt.Sprintf("Pulling files for %s", path))
