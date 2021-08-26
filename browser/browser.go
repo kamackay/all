@@ -118,7 +118,6 @@ func (b *Browser) Render() {
 		return
 	}
 	if b.file {
-		l.Print("Showing file TODO text")
 		b.drawString("You selected a file. That behavior is in the works", 8, termbox.ColorLightYellow, termbox.ColorBlack)
 		return
 	}
