@@ -20,6 +20,7 @@ type Browser struct {
 	Files         []File
 	fileLoadMutex sync.Mutex
 	loading       *model.LoadingInfo
+	file          bool
 }
 
 func (b *Browser) getFiles() {
@@ -27,6 +28,13 @@ func (b *Browser) getFiles() {
 	go func() {
 		b.fileLoadMutex.Lock()
 		defer b.fileLoadMutex.Unlock()
+		defer b.Render()
+		b.file = false
+		info, _ := os.Stat(path)
+		if info != nil && !info.IsDir() {
+			b.file = true
+			return
+		}
 		l.Print(fmt.Sprintf("Pulling files for %s", path))
 		fs := files.GetFiles(path)
 		fileList := make([]File, len(fs))
@@ -44,24 +52,15 @@ func (b *Browser) getFiles() {
 			b.loading.Item = x
 			b.Render()
 		}
-		parentPath := filepath.Join(path, "..")
-		parent, err := os.Stat(parentPath)
-		var parentSize uint64
-		if err == nil {
-			parentSize = files.GetSize(parentPath, parent)
-		} else {
-			l.Print(fmt.Sprintf("Error Getting Size: %+v\n", err))
-		}
+
 		sort.Slice(fileList, func(i, j int) bool {
 			return fileList[i].Size > fileList[j].Size
 		})
-		fileList = append([]File{{
-			Path: parentPath,
-			Size: parentSize,
-		}}, fileList...)
+		fileList = append([]File{
+			makeRelativeFile(path, ".."),
+		}, fileList...)
 		b.loading = nil
 		b.Files = fileList
-		b.Render()
 	}()
 }
 
@@ -103,18 +102,28 @@ func (b *Browser) Run() {
 	defer lock.Unlock()
 }
 
+func (b *Browser) drawString(line string, y int, fg, bg termbox.Attribute) {
+	for x := 0; x < len(line); x++ {
+		termbox.SetCell(x, y, rune(line[x]), fg, bg)
+	}
+}
+
 func (b *Browser) Render() {
 	l.Error(termbox.Clear(termbox.ColorWhite, termbox.ColorDefault))
 	defer termbox.Flush()
+	height := b.Height - 1
 	if b.loading != nil {
 		text := fmt.Sprintf("Loading... %d of %d", b.loading.Item, b.loading.Total)
-		for x := 0; x < len(text); x++ {
-			termbox.SetCell(x, 2, rune(text[x]), termbox.ColorGreen, termbox.ColorBlack)
-		}
+		b.drawString(text, 8, termbox.ColorGreen, termbox.ColorBlack)
 		return
 	}
-	line := 0
-	lastItem := utils.Min(len(b.Files), b.Height+b.SelectedLine)
+	if b.file {
+		b.drawString("You selected a file. That behavior is in the works", 8, termbox.ColorLightYellow, termbox.ColorBlack)
+		return
+	}
+	line := 1
+	b.drawString(fmt.Sprintf("Current: %s", b.path), 0, termbox.ColorLightMagenta, termbox.ColorBlack)
+	lastItem := utils.Min(len(b.Files), height+b.SelectedLine)
 	start := b.SelectedLine
 	l.Print(fmt.Sprintf("Printing from %d to %d", start, lastItem))
 	for y := start; y < lastItem; y++ {
@@ -126,9 +135,7 @@ func (b *Browser) Render() {
 			fg = termbox.ColorBlack
 			bg = termbox.ColorGreen
 		}
-		for x := 0; x < len(text); x++ {
-			termbox.SetCell(x, line, rune(text[x]), fg, bg)
-		}
+		b.drawString(text, line, fg, bg)
 		line++
 	}
 }
@@ -156,7 +163,7 @@ func (b *Browser) keyPress(e termbox.Event) {
 		b.setIndex(0)
 		b.Select()
 		break
-	case termbox.KeyEnter:
+	case termbox.KeyEnter, termbox.KeyArrowRight:
 		b.Select()
 		break
 	default:
