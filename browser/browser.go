@@ -28,6 +28,7 @@ type Browser struct {
 	loading       *model.LoadingInfo
 	file          *model.FileMode
 	pollChan      chan *termbox.Event
+	sort          model.SortType
 }
 
 func (b *Browser) getFiles() {
@@ -67,9 +68,15 @@ func (b *Browser) getFiles() {
 			b.loading.Item = x
 			b.update()
 		}
-
 		sort.Slice(fileList, func(i, j int) bool {
-			return fileList[i].Size > fileList[j].Size
+			switch b.sort {
+			case model.SortName:
+				return strings.Compare(fileList[i].Path, fileList[j].Path) < 0
+			case model.SortSize:
+				return fileList[i].Size > fileList[j].Size
+			default:
+				return true // Shouldn't be possible, so whatever
+			}
 		})
 		fileList = append([]File{
 			makeRelativeFile(path, ".."),
@@ -91,6 +98,7 @@ func New(root string) (*Browser, error) {
 		Height:       h,
 		SelectedLine: 0,
 		pollChan:     make(chan *termbox.Event),
+		sort:         model.SortSize,
 	}
 	b.getFiles()
 	b.setSize(h, w)
@@ -137,7 +145,8 @@ func (b *Browser) Render() {
 		return
 	}
 	line := 1
-	b.drawString(fmt.Sprintf("Current: %s", b.path), 0, termbox.ColorLightMagenta, termbox.ColorBlack)
+	b.drawString(fmt.Sprintf("Current: %s (Sorting by %s)", b.path, model.SortTypeName(b.sort)),
+		0, termbox.ColorLightMagenta, termbox.ColorBlack)
 	lastItem := utils.Min(len(b.Files), height+b.SelectedLine)
 	start := b.SelectedLine
 	l.Print(fmt.Sprintf("Printing from %d to %d", start, lastItem))
@@ -198,6 +207,17 @@ func (b *Browser) keyPress(e termbox.Event) {
 			dirname, err := os.UserHomeDir()
 			l.Error(err)
 			b.setPath(dirname)
+			break
+		case 's':
+			switch b.sort {
+			case model.SortSize:
+				b.sort = model.SortName
+				break
+			case model.SortName:
+				b.sort = model.SortSize
+				break
+			}
+			b.getFiles()
 			break
 		case 'r':
 			// Refresh
