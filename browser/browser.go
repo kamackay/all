@@ -3,6 +3,7 @@ package browser
 import (
 	"fmt"
 	"github.com/nsf/termbox-go"
+	"github.com/skratchdot/open-golang/open"
 	"gitlab.com/kamackay/all/files"
 	"gitlab.com/kamackay/all/l"
 	"gitlab.com/kamackay/all/model"
@@ -218,6 +219,9 @@ func (b *Browser) keyPress(e termbox.Event) {
 				break
 			}
 			b.getFiles()
+			break
+		case 'o':
+			_ = open.Run(b.Files[b.SelectedLine].Path)
 			break
 		case 'r':
 			// Refresh
