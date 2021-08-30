@@ -38,3 +38,9 @@ func Min(x, y int) int {
 	}
 	return y
 }
+
+func NilCheck(obj interface{}, action func()) {
+	if obj != nil {
+		action()
+	}
+}

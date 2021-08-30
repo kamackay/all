@@ -44,7 +44,6 @@ func (b *Browser) getFiles() {
 				start = fmt.Sprintf("Error Reading file: %+v", err)
 			}
 			b.file = &model.FileMode{Contents: start}
-			b.update()
 			b.Files = []File{makeRelativeFile(path, "..")}
 			return
 		}
@@ -67,7 +66,6 @@ func (b *Browser) getFiles() {
 			b.loading.Item = x
 			b.update()
 		}
-
 		sort.Slice(fileList, func(i, j int) bool {
 			return fileList[i].Size > fileList[j].Size
 		})

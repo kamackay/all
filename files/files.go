@@ -38,14 +38,16 @@ func GetFiles(path string) []fs.FileInfo {
 
 func GetFolderSize(path string) uint64 {
 	var size uint64
-	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
+	err := filepath.WalkDir(path, func(_ string, entry os.DirEntry, e error) error {
+		if e != nil {
+			return e
 		}
-		if !info.IsDir() {
-			size += uint64(info.Size())
+		if !entry.IsDir() {
+			if info, err := entry.Info(); err != nil {
+				size += uint64(info.Size())
+			}
 		}
-		return err
+		return nil
 	})
 	if err != nil {
 		return 0

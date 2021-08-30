@@ -1,8 +1,8 @@
 package model
 
 type LoadingInfo struct {
-	Item int
-	Total int
+	Item    int
+	Total   int
 	Current string
 }
 
