@@ -30,6 +30,7 @@ type Browser struct {
 	file          *model.FileMode
 	pollChan      chan *termbox.Event
 	sort          model.SortType
+	confirmations []model.Confirmation
 }
 
 func (b *Browser) getFiles() {
@@ -62,8 +63,8 @@ func (b *Browser) getFiles() {
 			b.update()
 			filename := filepath.Join(path, f.Name())
 			fileList[x] = File{
-				Path: filename,
-				Size: files.GetSize(path, f),
+				Path:         filename,
+				Size:         files.GetSize(path, f),
 				LastModified: files.PrintTime(f),
 			}
 			b.loading.Item = x
@@ -94,12 +95,13 @@ func New(root string) (*Browser, error) {
 	}
 	w, h := termbox.Size()
 	b := &Browser{
-		path:         root,
-		Width:        w,
-		Height:       h,
-		SelectedLine: 0,
-		pollChan:     make(chan *termbox.Event),
-		sort:         model.SortSize,
+		path:          root,
+		Width:         w,
+		Height:        h,
+		SelectedLine:  0,
+		pollChan:      make(chan *termbox.Event),
+		sort:          model.SortSize,
+		confirmations: make([]model.Confirmation, 0),
 	}
 	b.getFiles()
 	b.setSize(h, w)
@@ -137,6 +139,11 @@ func (b *Browser) Render() {
 		text := fmt.Sprintf("Loading... %d of %d, currently: %s", b.loading.Item, b.loading.Total, b.loading.Current)
 		b.drawString(text, 8, green, black)
 		return
+	} else if len(b.confirmations) > 0 {
+		confirmation := b.confirmations[0]
+		b.drawString(confirmation.Message, 8, green, black)
+		b.drawString("Press y to confirm, n to dismiss", 9, green, black)
+		return
 	}
 	if b.file != nil {
 		lines := strings.Split(b.file.Contents, "\n")
@@ -150,7 +157,7 @@ func (b *Browser) Render() {
 		0, termbox.ColorLightMagenta, termbox.ColorBlack)
 	lastItem := utils.Min(len(b.Files), height+b.SelectedLine)
 	start := b.SelectedLine
-	l.Print(fmt.Sprintf("Printing from %d to %d", start, lastItem))
+	//l.Print(fmt.Sprintf("Printing from %d to %d", start, lastItem))
 	for y := start; y < lastItem; y++ {
 		if y > len(b.Files)-1 {
 			break
@@ -226,6 +233,20 @@ func (b *Browser) keyPress(e termbox.Event) {
 			}
 			b.getFiles()
 			break
+		case 'n':
+			if len(b.confirmations) > 0 {
+				// There is a pending confirmation, remove it
+				b.confirmations = b.confirmations[1:]
+			}
+			break
+		case 'y':
+			if len(b.confirmations) > 0 {
+				// There is a pending confirmation, confirm it
+				confirmation := b.confirmations[0]
+				b.confirmations = b.confirmations[1:]
+				confirmation.Action()
+			}
+			break
 		case 'o':
 			_ = open.Run(b.Files[b.SelectedLine].Path)
 			break
@@ -294,7 +315,12 @@ func (b *Browser) setIndex(i int) {
 
 func (b *Browser) deleteCurrent() {
 	path := b.getCurrentFile().Path
-	l.Print(fmt.Sprintf("Deleting %s", path))
-	l.Error(os.RemoveAll(path))
-	b.getFiles()
+	b.confirmations = append(b.confirmations, model.Confirmation{
+		Message: fmt.Sprintf("Are you sure you want to delete %s?", path),
+		Action: func() {
+			l.Print(fmt.Sprintf("Deleting %s", path))
+			l.Error(os.RemoveAll(path))
+			b.getFiles()
+		},
+	})
 }

@@ -17,6 +17,11 @@ type FileMode struct {
 	Contents string
 }
 
+type Confirmation struct {
+	Message string
+	Action  func()
+}
+
 func SortTypeName(sortType SortType) string {
 	switch sortType {
 	case SortName:
