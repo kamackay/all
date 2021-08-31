@@ -64,6 +64,7 @@ func (b *Browser) getFiles() {
 			fileList[x] = File{
 				Path: filename,
 				Size: files.GetSize(path, f),
+				LastModified: files.PrintTime(f),
 			}
 			b.loading.Item = x
 			b.update()
@@ -151,8 +152,11 @@ func (b *Browser) Render() {
 	start := b.SelectedLine
 	l.Print(fmt.Sprintf("Printing from %d to %d", start, lastItem))
 	for y := start; y < lastItem; y++ {
+		if y > len(b.Files)-1 {
+			break
+		}
 		file := b.Files[y]
-		text := fmt.Sprintf("%s -> %s", file.Path, utils.FormatSize(file.Size, true))
+		text := fmt.Sprintf("%s    %s -> %s", file.LastModified, file.Path, utils.FormatSize(file.Size, true))
 		fg := green
 		bg := black
 		if y == b.SelectedLine {
@@ -200,6 +204,9 @@ func (b *Browser) keyPress(e termbox.Event) {
 	case termbox.KeyEnter, termbox.KeyArrowRight:
 		b.Select()
 		break
+	case termbox.KeyDelete, termbox.KeyCtrlD:
+		b.deleteCurrent()
+		break
 	default:
 		switch e.Ch {
 		case '~':
@@ -233,7 +240,7 @@ func (b *Browser) keyPress(e termbox.Event) {
 			b.setIndex(len(b.Files) - 1)
 			break
 		default:
-			l.Print(fmt.Sprintf("Unhandled Press on %s", string(e.Ch)))
+			l.Print(fmt.Sprintf("Unhandled Press %+v", e))
 		}
 		break
 	}
@@ -259,8 +266,12 @@ func (b *Browser) setPath(path string) {
 	b.getFiles()
 }
 
+func (b *Browser) getCurrentFile() File {
+	return b.Files[b.SelectedLine]
+}
+
 func (b *Browser) Select() {
-	newPath := b.Files[b.SelectedLine].Path
+	newPath := b.getCurrentFile().Path
 	l.Print("Selecting " + newPath)
 	b.setPath(newPath)
 }
@@ -279,4 +290,11 @@ func (b *Browser) setIndex(i int) {
 		i = len(b.Files) - 1
 	}
 	b.SelectedLine = i
+}
+
+func (b *Browser) deleteCurrent() {
+	path := b.getCurrentFile().Path
+	l.Print(fmt.Sprintf("Deleting %s", path))
+	l.Error(os.RemoveAll(path))
+	b.getFiles()
 }

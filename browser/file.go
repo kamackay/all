@@ -9,21 +9,23 @@ import (
 )
 
 type File struct {
-	Path string
-	Size uint64
+	Path         string
+	Size         uint64
+	LastModified string
 }
 
 func makeRelativeFile(path string, relative string) File {
-	parentPath := filepath.Join(path, relative)
-	parent, err := os.Stat(parentPath)
+	relativePath := filepath.Join(path, relative)
+	info, err := os.Stat(relativePath)
 	var size uint64
 	if err == nil {
-		size = files.GetSize(parentPath, parent)
+		size = files.GetSize(relativePath, info)
 	} else {
 		l.Print(fmt.Sprintf("Error Getting Size: %+v\n", err))
 	}
 	return File{
-		Path: parentPath,
+		Path: relativePath,
 		Size: size,
+		LastModified: files.PrintTime(info),
 	}
 }
