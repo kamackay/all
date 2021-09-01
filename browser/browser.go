@@ -2,6 +2,7 @@ package browser
 
 import (
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"github.com/nsf/termbox-go"
 	"github.com/skratchdot/open-golang/open"
 	"gitlab.com/kamackay/all/files"
@@ -13,6 +14,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -31,11 +33,22 @@ type Browser struct {
 	pollChan      chan *termbox.Event
 	sort          model.SortType
 	confirmations []model.Confirmation
+	timeReport    string
 }
 
 func (b *Browser) getFiles() {
 	path := b.path
 	go func() {
+		start := time.Now()
+		defer func() {
+			defer b.update()
+			now := time.Now()
+			if now.Sub(start) > 200*time.Millisecond {
+				b.timeReport = fmt.Sprintf("Done in %s", humanize.RelTime(start, now, "", ""))
+			} else {
+				b.timeReport = "Done really quickly"
+			}
+		}()
 		b.fileLoadMutex.Lock()
 		defer b.fileLoadMutex.Unlock()
 		defer b.update()
@@ -153,7 +166,8 @@ func (b *Browser) Render() {
 		return
 	}
 	line := 1
-	b.drawString(fmt.Sprintf("Current: %s (Sorting by %s)", b.path, model.SortTypeName(b.sort)),
+	b.drawString(fmt.Sprintf("Current: %s (Sorting by %s) (%s)", b.path, model.SortTypeName(b.sort),
+		strings.TrimSpace(b.timeReport)),
 		0, termbox.ColorLightMagenta, termbox.ColorBlack)
 	lastItem := utils.Min(len(b.Files), height+b.SelectedLine)
 	start := b.SelectedLine
@@ -163,7 +177,7 @@ func (b *Browser) Render() {
 			break
 		}
 		file := b.Files[y]
-		text := fmt.Sprintf("%s    %s -> %s", file.LastModified, file.Path, utils.FormatSize(file.Size, true))
+		text := fmt.Sprintf("%s    %s -> %s", file.LastModified, file.Path, utils.FormatSize(uint64(file.Size), true))
 		fg := green
 		bg := black
 		if y == b.SelectedLine {

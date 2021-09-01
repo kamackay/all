@@ -10,14 +10,14 @@ import (
 
 type File struct {
 	Path         string
-	Size         uint64
+	Size         int64
 	LastModified string
 }
 
 func makeRelativeFile(path string, relative string) File {
 	relativePath := filepath.Join(path, relative)
 	info, err := os.Stat(relativePath)
-	var size uint64
+	var size int64
 	if err == nil {
 		size = files.GetSize(relativePath, info)
 	} else {

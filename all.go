@@ -27,7 +27,7 @@ type Opts struct {
 }
 
 func printPath(file string, index int, isDir bool, opts Opts) {
-	var size uint64
+	var size int64
 	if isDir {
 		size = files.GetFolderSize(file)
 	} else {
@@ -37,7 +37,7 @@ func printPath(file string, index int, isDir bool, opts Opts) {
 		// File is less than a gig, quit
 		return
 	}
-	fmt.Printf("%s%s - %s\n", utils.Indentation(index), utils.FormatSize(size, opts.Humanize), file)
+	fmt.Printf("%s%s - %s\n", utils.Indentation(index), utils.FormatSize(uint64(size), opts.Humanize), file)
 }
 
 func printFolder(dir string, index int, opts Opts) {

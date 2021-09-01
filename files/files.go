@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-func GetSize(path string, file fs.FileInfo) uint64 {
+func GetSize(path string, file fs.FileInfo) int64 {
 	filename := filepath.Join(path, file.Name())
 	if file.IsDir() {
 		return GetFolderSize(filename)
@@ -17,14 +17,14 @@ func GetSize(path string, file fs.FileInfo) uint64 {
 	}
 }
 
-func GetFileSize(file string) uint64 {
+func GetFileSize(file string) int64 {
 	fi, err := os.Stat(file)
 	if err != nil {
 		return 0
 	}
 	// get the size
 	size := fi.Size()
-	return uint64(size)
+	return size
 }
 
 func GetFiles(path string) []fs.FileInfo {
@@ -36,16 +36,21 @@ func GetFiles(path string) []fs.FileInfo {
 	return files
 }
 
-func GetFolderSize(path string) uint64 {
-	var size uint64
-	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+func GetFolderSize(path string) int64 {
+	var size int64
+	err := filepath.WalkDir(path, func(_ string, d os.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return nil
 		}
-		if !info.IsDir() {
-			size += uint64(info.Size())
+		if d.IsDir() {
+			return nil
 		}
-		return err
+		info, err := d.Info()
+		if err != nil {
+			return nil
+		}
+		size += info.Size()
+		return nil
 	})
 	if err != nil {
 		return 0
