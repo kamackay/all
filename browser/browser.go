@@ -23,17 +23,18 @@ const (
 )
 
 type Browser struct {
-	path          string
-	Width, Height int
-	SelectedLine  int
-	Files         []File
-	fileLoadMutex sync.Mutex
-	loading       *model.LoadingInfo
-	file          *model.FileMode
-	pollChan      chan *termbox.Event
-	sort          model.SortType
-	confirmations []model.Confirmation
-	timeReport    string
+	path              string
+	Width, Height     int
+	SelectedLine      int
+	Files             []File
+	fileLoadMutex     sync.Mutex
+	loading           *model.LoadingInfo
+	file              *model.FileMode
+	pollChan          chan *termbox.Event
+	sort              model.SortType
+	confirmations     []model.Confirmation
+	timeReport        string
+	autoUpdateEnabled bool
 }
 
 func (b *Browser) getFiles() {
@@ -43,10 +44,11 @@ func (b *Browser) getFiles() {
 		defer func() {
 			defer b.update()
 			now := time.Now()
-			if now.Sub(start) > 200*time.Millisecond {
+			diff := now.Sub(start)
+			if diff > time.Second {
 				b.timeReport = fmt.Sprintf("Done in %s", humanize.RelTime(start, now, "", ""))
 			} else {
-				b.timeReport = "Done really quickly"
+				b.timeReport = fmt.Sprintf("Done in %dms", diff.Milliseconds())
 			}
 		}()
 		b.fileLoadMutex.Lock()
@@ -108,13 +110,14 @@ func New(root string) (*Browser, error) {
 	}
 	w, h := termbox.Size()
 	b := &Browser{
-		path:          root,
-		Width:         w,
-		Height:        h,
-		SelectedLine:  0,
-		pollChan:      make(chan *termbox.Event),
-		sort:          model.SortSize,
-		confirmations: make([]model.Confirmation, 0),
+		path:              root,
+		Width:             w,
+		Height:            h,
+		SelectedLine:      0,
+		pollChan:          make(chan *termbox.Event),
+		sort:              model.SortSize,
+		confirmations:     make([]model.Confirmation, 0),
+		autoUpdateEnabled: false,
 	}
 	b.getFiles()
 	b.setSize(h, w)
@@ -122,18 +125,29 @@ func New(root string) (*Browser, error) {
 }
 
 func (b *Browser) Run() {
-	//time.AfterFunc(time.Minute, b.kill)
 	defer b.close()
 	go b.poll()
 	for {
 		b.Render()
-		e := <-b.pollChan
-		if e == nil {
-			continue
-		} else if e.Ch == 'q' || e.Key == termbox.KeyCtrlC {
-			return
-		} else {
-			b.keyPress(*e)
+		select {
+		case <-time.After(time.Second * 5):
+			if b.loading != nil {
+				break
+			}
+			if !b.autoUpdateEnabled {
+				break
+			}
+			b.getFiles()
+			break
+		case e := <-b.pollChan:
+			if e == nil {
+				continue
+			} else if e.Ch == 'q' || e.Key == termbox.KeyCtrlC {
+				return
+			} else {
+				b.keyPress(*e)
+			}
+			break
 		}
 	}
 }
@@ -166,7 +180,8 @@ func (b *Browser) Render() {
 		return
 	}
 	line := 1
-	b.drawString(fmt.Sprintf("Current: %s (Sorting by %s) (%s)", b.path, model.SortTypeName(b.sort),
+	b.drawString(fmt.Sprintf("Current: %s (Sorting by %s) [Auto Update: %s] (%s)", b.path, model.SortTypeName(b.sort),
+		b.getAutoUpdateString(),
 		strings.TrimSpace(b.timeReport)),
 		0, termbox.ColorLightMagenta, termbox.ColorBlack)
 	lastItem := utils.Min(len(b.Files), height+b.SelectedLine)
@@ -187,6 +202,13 @@ func (b *Browser) Render() {
 		b.drawString(text, line, fg, bg)
 		line++
 	}
+}
+
+func (b *Browser) getAutoUpdateString() string {
+	if b.autoUpdateEnabled {
+		return "on"
+	}
+	return "off"
 }
 
 func (b *Browser) wipe() {
@@ -230,6 +252,9 @@ func (b *Browser) keyPress(e termbox.Event) {
 		break
 	default:
 		switch e.Ch {
+		case 'a':
+			b.autoUpdateEnabled = true
+			break
 		case '~':
 			// Set to Home Path
 			dirname, err := os.UserHomeDir()
