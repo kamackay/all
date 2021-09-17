@@ -35,6 +35,7 @@ type Browser struct {
 	confirmations     []model.Confirmation
 	timeReport        string
 	autoUpdateEnabled bool
+	updatedString string
 }
 
 func (b *Browser) getFiles() {
@@ -50,6 +51,7 @@ func (b *Browser) getFiles() {
 			} else {
 				b.timeReport = fmt.Sprintf("Done in %dms", diff.Milliseconds())
 			}
+			b.updatedString = time.Now().Format("2006-01-02 15:04:05")
 		}()
 		b.fileLoadMutex.Lock()
 		defer b.fileLoadMutex.Unlock()
@@ -180,9 +182,11 @@ func (b *Browser) Render() {
 		return
 	}
 	line := 1
-	b.drawString(fmt.Sprintf("Current: %s (Sorting by %s) [Auto Update: %s] (%s)", b.path, model.SortTypeName(b.sort),
+	b.drawString(fmt.Sprintf("Current: %s (Sorting by %s) [Auto Update: %s] (%s) {Updated: %s}", b.path,
+		model.SortTypeName(b.sort),
 		b.getAutoUpdateString(),
-		strings.TrimSpace(b.timeReport)),
+		strings.TrimSpace(b.timeReport),
+		b.updatedString),
 		0, termbox.ColorLightMagenta, termbox.ColorBlack)
 	lastItem := utils.Min(len(b.Files), height+b.SelectedLine)
 	start := b.SelectedLine
