@@ -35,7 +35,7 @@ type Browser struct {
 	confirmations     []model.Confirmation
 	timeReport        string
 	autoUpdateEnabled bool
-	updatedString string
+	updatedString     string
 }
 
 func (b *Browser) getFiles() {
@@ -164,8 +164,8 @@ func (b *Browser) Render() {
 	l.Error(termbox.Clear(termbox.ColorWhite, termbox.ColorDefault))
 	defer termbox.Flush()
 	height := b.Height - 1
-	if b.loading != nil {
-		text := fmt.Sprintf("Loading... %d of %d, currently: %s", b.loading.Item, b.loading.Total, b.loading.Current)
+	if loading := b.loading; loading != nil {
+		text := fmt.Sprintf("Loading... %d of %d, currently: %s", loading.Item, loading.Total, loading.Current)
 		b.drawString(text, 8, green, black)
 		return
 	} else if len(b.confirmations) > 0 {

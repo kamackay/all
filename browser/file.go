@@ -17,15 +17,12 @@ type File struct {
 func makeRelativeFile(path string, relative string) File {
 	relativePath := filepath.Join(path, relative)
 	info, err := os.Stat(relativePath)
-	var size int64
-	if err == nil {
-		size = files.GetSize(relativePath, info)
-	} else {
+	if err != nil {
 		l.Print(fmt.Sprintf("Error Getting Size: %+v\n", err))
 	}
 	return File{
-		Path: relativePath,
-		Size: size,
+		Path:         relativePath,
+		Size:         0,
 		LastModified: files.PrintTime(info),
 	}
 }
