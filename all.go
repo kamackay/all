@@ -24,6 +24,7 @@ type Opts struct {
 	Directory string `arg:"d" help:"Directory" default:"."`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
+	FirstOnly bool   `short:"f" help:"Only show the first level of the filetree"`
 }
 
 func printPath(file string, index int, isDir bool, opts Opts) {
@@ -45,7 +46,9 @@ func printFolder(dir string, index int, opts Opts) {
 	for _, file := range fs {
 		if file.IsDir() {
 			printPath(path.Join(dir, file.Name()), index, true, opts)
-			printFolder(path.Join(dir, file.Name()), index+1, opts)
+			if !opts.FirstOnly {
+				printFolder(path.Join(dir, file.Name()), index+1, opts)
+			}
 		} else {
 			printPath(path.Join(dir, file.Name()), index, false, opts)
 		}
