@@ -27,10 +27,10 @@ type Opts struct {
 	FirstOnly bool   `short:"f" help:"Only show the first level of the filetree"`
 }
 
-func printPath(file string, index int, isDir bool, opts Opts) {
+func printPath(file string, index int, isDir bool, opts Opts, cache *files.FileCache) {
 	var size int64
 	if isDir {
-		size = files.GetFolderSize(file)
+		size = files.GetFolderSize(file, *cache)
 	} else {
 		size = files.GetFileSize(file)
 	}
@@ -41,16 +41,16 @@ func printPath(file string, index int, isDir bool, opts Opts) {
 	fmt.Printf("%s%s - %s\n", utils.Indentation(index), utils.FormatSize(uint64(size), opts.Humanize), file)
 }
 
-func printFolder(dir string, index int, opts Opts) {
+func printFolder(dir string, index int, opts Opts, cache files.FileCache) {
 	fs := files.GetFiles(dir)
 	for _, file := range fs {
 		if file.IsDir() {
-			printPath(path.Join(dir, file.Name()), index, true, opts)
+			printPath(path.Join(dir, file.Name()), index, true, opts, &cache)
 			if !opts.FirstOnly {
-				printFolder(path.Join(dir, file.Name()), index+1, opts)
+				printFolder(path.Join(dir, file.Name()), index+1, opts, cache)
 			}
 		} else {
-			printPath(path.Join(dir, file.Name()), index, false, opts)
+			printPath(path.Join(dir, file.Name()), index, false, opts, &cache)
 		}
 	}
 }
@@ -90,7 +90,7 @@ func main() {
 		return
 	}
 
-	printFolder(base, 0, opts)
+	printFolder(base, 0, opts, make(files.FileCache))
 
 	if time.Now().Sub(start) > 100*time.Millisecond {
 		fmt.Printf("Done in %s\n", humanize.RelTime(start, time.Now(), "", ""))

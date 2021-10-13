@@ -5,13 +5,16 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 )
+
+type FileCache = map[string]os.DirEntry
 
 func GetSize(path string, file fs.FileInfo) int64 {
 	filename := filepath.Join(path, file.Name())
 	if file.IsDir() {
-		return GetFolderSize(filename)
+		return GetFolderSize(filename, make(FileCache))
 	} else {
 		return GetFileSize(filename)
 	}
@@ -36,26 +39,34 @@ func GetFiles(path string) []fs.FileInfo {
 	return files
 }
 
-func GetFolderSize(path string) int64 {
+func GetFolderSize(pathName string, cache FileCache) int64 {
 	var size int64
-	err := filepath.WalkDir(path, func(_ string, d os.DirEntry, err error) error {
+	if val, ok := cache[pathName]; ok {
+		return getSize(val)
+	}
+	err := filepath.WalkDir(pathName, func(_ string, d os.DirEntry, err error) error {
+		cache[path.Join(pathName, d.Name())] = d
 		if err != nil {
 			return nil
 		}
 		if d.IsDir() {
 			return nil
 		}
-		info, err := d.Info()
-		if err != nil {
-			return nil
-		}
-		size += info.Size()
+		size += getSize(d)
 		return nil
 	})
 	if err != nil {
 		return 0
 	}
 	return size
+}
+
+func getSize(entry os.DirEntry) int64 {
+	info, err := entry.Info()
+	if err != nil {
+		return 0
+	}
+	return info.Size()
 }
 
 func ReadStart(path string, size int) (string, error) {
