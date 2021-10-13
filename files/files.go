@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-type FileCache = map[string]os.DirEntry
+type FileCache = map[string]os.FileInfo
 
 func GetSize(path string, file fs.FileInfo) int64 {
 	filename := filepath.Join(path, file.Name())
@@ -41,11 +41,11 @@ func GetFiles(path string) []fs.FileInfo {
 
 func GetFolderSize(pathName string, cache FileCache) int64 {
 	var size int64
-	if val, ok := cache[pathName]; ok {
-		return getSize(val)
+	if val, ok := cache[pathName]; ok && val != nil {
+		return val.Size()
 	}
 	err := filepath.WalkDir(pathName, func(_ string, d os.DirEntry, err error) error {
-		cache[path.Join(pathName, d.Name())] = d
+		cache[path.Join(pathName, d.Name())], _ = d.Info()
 		if err != nil {
 			return nil
 		}
