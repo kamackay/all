@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/alecthomas/kong"
 	"github.com/dustin/go-humanize"
+	"github.com/fatih/color"
 	"gitlab.com/kamackay/all/browser"
 	"gitlab.com/kamackay/all/files"
 	"gitlab.com/kamackay/all/l"
@@ -25,6 +26,7 @@ type Opts struct {
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
 	FirstOnly bool   `short:"f" help:"Only show the first level of the filetree"`
+	Search    string `short:"s" help:"Search all files in this folder for this text" default:""`
 }
 
 func printPath(file string, index int, isDir bool, opts Opts, cache *files.FileCache) {
@@ -56,6 +58,8 @@ func printFolder(dir string, index int, opts Opts, cache files.FileCache) {
 }
 
 func main() {
+	red := color.New(color.FgRed)
+	green := color.New(color.FgGreen)
 	var opts Opts
 	ctx := kong.Parse(&opts)
 
@@ -87,6 +91,23 @@ func main() {
 			return
 		}
 		b.Run()
+		return
+	}
+
+	if len(opts.Search) > 0 {
+		items := files.ScanFiles(base)
+		for file := range items {
+			content, err := files.ReadEntire(file.Name)
+			utils.NilCheckElse(err, func() {
+				fmt.Printf("Could not read file %s: %+v\n", content, err)
+			}, func() {
+				if utils.ContainsIgnoreCase(content, opts.Search) {
+					green.Printf("Found in %s\n", file.Name)
+				} else if opts.Verbose {
+					red.Printf("Not in %s\n", file.Name)
+				}
+			})
+		}
 		return
 	}
 

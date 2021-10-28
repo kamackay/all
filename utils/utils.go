@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/dustin/go-humanize"
+	"strings"
 )
 
 const (
@@ -39,8 +40,24 @@ func Min(x, y int) int {
 	return y
 }
 
+func ContainsIgnoreCase(a string, b string) bool {
+	return strings.Contains(
+		strings.ToLower(a),
+		strings.ToLower(b),
+	)
+}
+
 func NilCheck(obj interface{}, action func()) {
 	if obj != nil {
 		action()
 	}
 }
+
+func NilCheckElse(obj interface{}, action func(), elseAction func()) {
+	if obj != nil {
+		action()
+	} else {
+		elseAction()
+	}
+}
+

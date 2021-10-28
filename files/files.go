@@ -30,13 +30,38 @@ func GetFileSize(file string) int64 {
 	return size
 }
 
-func GetFiles(path string) []fs.FileInfo {
-	files, err := ioutil.ReadDir(path)
+func GetFiles(filename string) []fs.FileInfo {
+	files, err := ioutil.ReadDir(filename)
 	if err != nil {
 		fmt.Printf("%+v\n", err)
 		return make([]fs.FileInfo, 0)
 	}
 	return files
+}
+
+func ScanFiles(dir string) <-chan File {
+	files := make(chan File)
+	go func() {
+		ScanFilesWorker(dir, files)
+		close(files)
+	}()
+	return files
+}
+
+func ScanFilesWorker(dir string, output chan<- File) {
+	infos, err := ioutil.ReadDir(dir)
+	if err != nil {
+		fmt.Printf("%+v\n", err)
+		return
+	}
+	for _, info := range infos {
+		file := NewFile(info, dir)
+		if file.IsDir {
+			ScanFilesWorker(file.Name, output)
+		} else {
+			output <- file
+		}
+	}
 }
 
 func GetFolderSize(pathName string, cache FileCache) int64 {
@@ -85,4 +110,12 @@ func ReadStart(path string, size int) (string, error) {
 
 func PrintTime(info os.FileInfo) string {
 	return info.ModTime().Format("2006-01-02 15:04:05")
+}
+
+func ReadEntire(filename string) (string, error) {
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
