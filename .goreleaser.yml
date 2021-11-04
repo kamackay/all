@@ -36,7 +36,6 @@ brews:
       owner: kamackay
       name: tap
       branch: main
-      token: {{ .Env.GH_PAT }}
     commit_author:
       name: Keith MacKay
       email: keith@keithmackay.com
