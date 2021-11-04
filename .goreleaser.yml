@@ -34,7 +34,7 @@ brews:
   - name: all
     tap:
       owner: kamackay
-      name: tap
+      name: homebrew-tap
       branch: main
     commit_author:
       name: Keith MacKay
