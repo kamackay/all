@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gitlab.com/kamackay/all/files"
 	"gitlab.com/kamackay/all/l"
+	"gitlab.com/kamackay/all/utils"
 	"os"
 	"path/filepath"
 )
@@ -11,7 +12,24 @@ import (
 type File struct {
 	Path         string
 	Size         int64
+	Dir          bool
 	LastModified string
+	ToString     func() string
+	Children     uint
+}
+
+func ToString(file File) string {
+	if file.Dir {
+		return fmt.Sprintf("%s    %s -> %s (#%d)",
+			file.LastModified,
+			file.Path,
+			utils.FormatSize(uint64(file.Size), true),
+			file.Children)
+	}
+	return fmt.Sprintf("%s    %s -> %s",
+		file.LastModified,
+		file.Path,
+		utils.FormatSize(uint64(file.Size), true))
 }
 
 func makeRelativeFile(path string, relative string) File {
@@ -24,5 +42,7 @@ func makeRelativeFile(path string, relative string) File {
 		Path:         relativePath,
 		Size:         0,
 		LastModified: files.PrintTime(info),
+		Dir:          info.IsDir(),
+		Children:     files.CountChildren(relativePath),
 	}
 }

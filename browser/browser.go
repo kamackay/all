@@ -83,6 +83,8 @@ func (b *Browser) getFiles() {
 				Path:         filename,
 				Size:         files.GetSize(path, f),
 				LastModified: files.PrintTime(f),
+				Dir:          f.IsDir(),
+				Children:     files.CountChildren(filename),
 			}
 			b.loading.Item = x
 			b.update()
@@ -196,7 +198,7 @@ func (b *Browser) Render() {
 			break
 		}
 		file := b.Files[y]
-		text := fmt.Sprintf("%s    %s -> %s", file.LastModified, file.Path, utils.FormatSize(uint64(file.Size), true))
+		text := ToString(file)
 		fg := green
 		bg := black
 		if y == b.SelectedLine {

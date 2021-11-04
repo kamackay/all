@@ -20,6 +20,32 @@ func GetSize(path string, file fs.FileInfo) int64 {
 	}
 }
 
+func CountChildren(file string) uint {
+	files, err := ioutil.ReadDir(file)
+	if err != nil {
+		return 0
+	}
+	return uint(len(files))
+}
+
+func CountChildrenRecursive(pathName string) uint {
+	var count uint
+	err := filepath.WalkDir(pathName, func(_ string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		count++
+		return nil
+	})
+	if err != nil {
+		return 0
+	}
+	return count
+}
+
 func GetFileSize(file string) int64 {
 	fi, err := os.Stat(file)
 	if err != nil {
