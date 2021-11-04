@@ -1,15 +1,14 @@
-name: Deploy
+name: Build
 on:
   push:
-    tags:
-      - v*
+    branches:
+      - *
 
 jobs:
   release:
-    name: Release on GitHub
+    name: Build
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -35,13 +34,8 @@ jobs:
           echo "APP_VERSION=$(echo $(go run . --version))" >> $GITHUB_ENV
           echo "FORMULA_SUFFIX=" >> $GITHUB_ENV
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          version: latest
-          args: release --rm-dist --skip-validate
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_TOKEN_BREW: ${{ secrets.READONLY_GITHUB_TOKEN }}
-          APP_VERSION: ${{ env.APP_VERSION}}
-          FORMULA_SUFFIX: ${{ env.FORMULA_SUFFIX}}
+      - name: Build
+        run: |
+          go mod download
+          go mod verify
+          go build -o ./all
