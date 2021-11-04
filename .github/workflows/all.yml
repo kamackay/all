@@ -45,7 +45,7 @@ jobs:
           version: latest
           args: release --rm-dist --skip-validate
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_TOKEN_BREW: ${{ secrets.READONLY_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN_BREW: ${{ secrets.GH_PAT }}
           APP_VERSION: ${{ env.APP_VERSION}}
           FORMULA_SUFFIX: ${{ env.FORMULA_SUFFIX}}
