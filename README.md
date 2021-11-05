@@ -1,6 +1,11 @@
 # all
 CLI tool to list out files in a folder recursively, track file system size with a built in interactive browser, and search for file contents recursively
 
+## Installation
+```
+> brew install kamackay/homebrew-tap/all
+```
+
 ### List all files recursively in current folder
 ```
 > all
