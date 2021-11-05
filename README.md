@@ -35,3 +35,18 @@ CLI tool to list out files in a folder recursively, track file system size with 
 ```
 > all -b
 ```
+
+#### Browser Commands
+
+- Arrow Up/Down: Navigate in current folder
+- Left Arrow: Go one folder higher in directory
+- Right Arrow/Enter: Drill into currently selected folder
+- Delete/Ctrl+d: Delete current highlighted file (will show a prompt first)
+- 'a': Turn on auto update, will refresh current folder every 5 seconds
+- 'q'/ctrl+c: Exit
+- '~': Go to home directory
+- 's': Toggle Sort Mode, currently supports by name or by file size
+- 'o': Open current file (calls Golang's `open-golang Run function`)
+- 'r': Refresh current folder
+- '\[': Go to top of list
+- '\]': Go to bottom of list
