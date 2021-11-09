@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"time"
 )
 
@@ -26,7 +27,9 @@ type Opts struct {
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
 	FirstOnly bool   `short:"f" help:"Only show the first level of the filetree"`
+	Regex     string `short:"r" help:"Search for files that match this regex in it's entirety (Search does a substring search)"`
 	Search    string `short:"s" help:"Search all files in this folder for this text" default:""`
+	NoCase    bool   `short:"i" help:"Use Case Insensitivity for Search"`
 }
 
 func printPath(file string, index int, isDir bool, opts Opts, cache *files.FileCache) {
@@ -94,14 +97,26 @@ func main() {
 		return
 	}
 
-	if len(opts.Search) > 0 {
+	if len(opts.Search) > 0 || len(opts.Regex) > 0 {
+		var r *regexp.Regexp
+		if len(opts.Regex) > 0 {
+			r, err = regexp.Compile(fmt.Sprintf(".*%s.*", opts.Regex))
+		} else if opts.NoCase {
+			r, err = regexp.Compile(fmt.Sprintf("(?i).*%s.*", opts.Search))
+		} else {
+			r, err = regexp.Compile(fmt.Sprintf(".*%s.*", opts.Search))
+		}
+		if err != nil {
+			red.Printf("Couldn't parse %s into Golang Regex", opts.Search)
+			return
+		}
 		items := files.ScanFiles(base)
 		for file := range items {
 			content, err := files.ReadEntire(file.Name)
 			utils.NilCheckElse(err, func() {
 				fmt.Printf("Could not read file %s: %+v\n", content, err)
 			}, func() {
-				if utils.ContainsIgnoreCase(content, opts.Search) {
+				if utils.ContainsIgnoreCase(content, r) {
 					green.Printf("Found in %s\n", file.Name)
 				} else if opts.Verbose {
 					red.Printf("Not in %s\n", file.Name)
