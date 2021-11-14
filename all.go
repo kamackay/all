@@ -21,6 +21,7 @@ const (
 )
 
 type Opts struct {
+	Version   bool   `arg:"version" help:"Print Version"`
 	Browser   bool   `short:"b" help:"Run Browser"`
 	Verbose   bool   `short:"v" help:"Verbose"`
 	Directory string `arg:"d" help:"Directory" default:"."`
@@ -67,6 +68,11 @@ func main() {
 	ctx := kong.Parse(&opts)
 
 	start := time.Now()
+
+	if opts.Version {
+		fmt.Printf("%s\n", VERSION)
+		return
+	}
 
 	dir := opts.Directory
 
