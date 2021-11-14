@@ -9,6 +9,7 @@ import (
 	"gitlab.com/kamackay/all/files"
 	"gitlab.com/kamackay/all/l"
 	"gitlab.com/kamackay/all/utils"
+	"gitlab.com/kamackay/all/version"
 	"os"
 	"path"
 	"path/filepath"
@@ -21,9 +22,9 @@ const (
 )
 
 type Opts struct {
-	Version   bool   `arg:"version" help:"Print Version"`
-	Browser   bool   `short:"b" help:"Run Browser"`
-	Verbose   bool   `short:"v" help:"Verbose"`
+	Version   bool   `help:"Print Version"`
+	Browser   bool   `short:"v" help:"Run Browser"`
+	Verbose   bool   `short:"b" help:"Verbose"`
 	Directory string `arg:"d" help:"Directory" default:"."`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
@@ -70,7 +71,7 @@ func main() {
 	start := time.Now()
 
 	if opts.Version {
-		fmt.Printf("%s\n", VERSION)
+		fmt.Printf("%s\n", version.VERSION)
 		return
 	}
 
