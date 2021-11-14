@@ -43,7 +43,7 @@ func printPath(file string, index int, isDir bool, opts Opts, cache *files.FileC
 		// File is less than a gig, quit
 		return
 	}
-	fmt.Printf("%s%s - %s\n", utils.Indentation(index), utils.FormatSize(uint64(size), opts.Humanize), file)
+	fmt.Printf("%s%s\t- %s\n", utils.Indentation(index), utils.FormatSize(uint64(size), opts.Humanize), file)
 }
 
 func printFolder(dir string, index int, opts Opts, cache files.FileCache) {
