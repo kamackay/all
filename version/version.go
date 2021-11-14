@@ -1,4 +1,4 @@
 package main
 
-const {VERSION = "v1.8.2"}
+const (VERSION = "v1.8.2")
 
