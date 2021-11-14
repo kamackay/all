@@ -2,9 +2,9 @@ package browser
 
 import (
 	"fmt"
-	"gitlab.com/kamackay/all/files"
-	"gitlab.com/kamackay/all/l"
-	"gitlab.com/kamackay/all/utils"
+	"github.com/kamackay/all/files"
+	"github.com/kamackay/all/l"
+	"github.com/kamackay/all/utils"
 	"os"
 	"path/filepath"
 )

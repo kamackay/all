@@ -1,4 +1,4 @@
-module gitlab.com/kamackay/all
+module github.com/kamackay/all
 
 go 1.14
 
