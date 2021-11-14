@@ -1,1 +1,1 @@
-echo "package main\n\nconst {VERSION = \"$1\"}\n" > ./version/version.go && git add version/version.go && git commit -m "Version Increment" && git tag -a $1 -m "Version $1" && git remote | xargs -L1 -I {} git push {} $1
+echo "package main\n\nconst (VERSION = \"$1\")\n" > ./version/version.go && git add version/version.go ; git commit -m "Version Increment" ; git tag -a $1 -m "Version $1" && git remote | xargs -L1 -I {} git push {} $1
