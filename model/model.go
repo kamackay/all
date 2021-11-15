@@ -11,6 +11,7 @@ type LoadingInfo struct {
 	Item    int
 	Total   int
 	Current string
+	Render bool
 }
 
 type FileMode struct {

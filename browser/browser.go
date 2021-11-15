@@ -3,12 +3,12 @@ package browser
 import (
 	"fmt"
 	"github.com/dustin/go-humanize"
-	"github.com/nsf/termbox-go"
-	"github.com/skratchdot/open-golang/open"
 	"github.com/kamackay/all/files"
 	"github.com/kamackay/all/l"
 	"github.com/kamackay/all/model"
 	"github.com/kamackay/all/utils"
+	"github.com/nsf/termbox-go"
+	"github.com/skratchdot/open-golang/open"
 	"os"
 	"path/filepath"
 	"sort"
@@ -38,7 +38,7 @@ type Browser struct {
 	updatedString     string
 }
 
-func (b *Browser) getFiles() {
+func (b *Browser) getFiles(render bool) {
 	path := b.path
 	go func() {
 		start := time.Now()
@@ -74,6 +74,7 @@ func (b *Browser) getFiles() {
 		b.loading = &model.LoadingInfo{
 			Item:  0,
 			Total: len(fs),
+			Render: render,
 		}
 		for x, f := range fs {
 			b.loading.Current = f.Name()
@@ -123,7 +124,7 @@ func New(root string) (*Browser, error) {
 		confirmations:     make([]model.Confirmation, 0),
 		autoUpdateEnabled: false,
 	}
-	b.getFiles()
+	b.getFiles(true)
 	b.setSize(h, w)
 	return b, nil
 }
@@ -141,7 +142,7 @@ func (b *Browser) Run() {
 			if !b.autoUpdateEnabled {
 				break
 			}
-			b.getFiles()
+			b.getFiles(false)
 			break
 		case e := <-b.pollChan:
 			if e == nil {
@@ -166,7 +167,7 @@ func (b *Browser) Render() {
 	l.Error(termbox.Clear(termbox.ColorWhite, termbox.ColorDefault))
 	defer termbox.Flush()
 	height := b.Height - 1
-	if loading := b.loading; loading != nil {
+	if loading := b.loading; loading != nil && loading.Render {
 		text := fmt.Sprintf("Loading... %d of %d, currently: %s", loading.Item, loading.Total, loading.Current)
 		b.drawString(text, 8, green, black)
 		return
@@ -276,7 +277,7 @@ func (b *Browser) keyPress(e termbox.Event) {
 				b.sort = model.SortSize
 				break
 			}
-			b.getFiles()
+			b.getFiles(true)
 			break
 		case 'n':
 			if len(b.confirmations) > 0 {
@@ -297,7 +298,7 @@ func (b *Browser) keyPress(e termbox.Event) {
 			break
 		case 'r':
 			// Refresh
-			b.getFiles()
+			b.getFiles(true)
 			break
 		case '[':
 			b.setIndex(0)
@@ -329,7 +330,7 @@ func (b *Browser) close() {
 func (b *Browser) setPath(path string) {
 	b.path = path
 	b.setIndex(0)
-	b.getFiles()
+	b.getFiles(true)
 }
 
 func (b *Browser) getCurrentFile() File {
@@ -365,7 +366,7 @@ func (b *Browser) deleteCurrent() {
 		Action: func() {
 			l.Print(fmt.Sprintf("Deleting %s", path))
 			l.Error(os.RemoveAll(path))
-			b.getFiles()
+			b.getFiles(true)
 		},
 	})
 }
