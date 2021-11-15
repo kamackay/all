@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"github.com/dustin/go-humanize"
+	"math"
 	"regexp"
 )
 
@@ -20,10 +20,30 @@ func Indentation(index int) string {
 
 func FormatSize(sizeBytes uint64, human bool) string {
 	if human {
-		return humanize.Bytes(sizeBytes)
+		return HumanizeBytes(sizeBytes)
 	} else {
 		return fmt.Sprintf("%d", sizeBytes)
 	}
+}
+
+func HumanizeBytes(s uint64) string {
+	sizes := []string{"B", "kB", "MB", "GB", "TB", "PB", "EB"}
+	return humanizeBytes(s, 1000, sizes)
+}
+
+func humanizeBytes(s uint64, base float64, sizes []string) string {
+	if s < 10 {
+		return fmt.Sprintf("%d B", s)
+	}
+	e := math.Floor(logN(float64(s), base))
+	suffix := sizes[int(e)]
+	val := math.Floor(float64(s)/math.Pow(base, e)*10+0.5) / 10
+	f := "%.1f %s"
+	return fmt.Sprintf(f, val, suffix)
+}
+
+func logN(n, b float64) float64 {
+	return math.Log(n) / math.Log(b)
 }
 
 func Max(x, y int) int {
@@ -57,4 +77,3 @@ func NilCheckElse(obj interface{}, action func(), elseAction func()) {
 		elseAction()
 	}
 }
-
