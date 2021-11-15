@@ -93,7 +93,7 @@ func (b *Browser) getFiles(render bool) {
 		sort.Slice(fileList, func(i, j int) bool {
 			switch b.sort {
 			case model.SortName:
-				return strings.Compare(fileList[i].Path, fileList[j].Path) < 0
+				return strings.Compare(strings.ToLower(fileList[i].Path), strings.ToLower(fileList[j].Path)) < 0
 			case model.SortSize:
 				return fileList[i].Size > fileList[j].Size
 			default:
