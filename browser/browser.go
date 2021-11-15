@@ -36,6 +36,7 @@ type Browser struct {
 	timeReport        string
 	autoUpdateEnabled bool
 	updatedString     string
+	reloadInterval    time.Duration
 }
 
 func (b *Browser) getFiles(render bool) {
@@ -46,6 +47,12 @@ func (b *Browser) getFiles(render bool) {
 			defer b.update()
 			now := time.Now()
 			diff := now.Sub(start)
+			if diff < time.Millisecond * 200 {
+				// Updating this folder is pretty quick, update it more frequently
+				b.reloadInterval = time.Second
+			} else {
+				b.reloadInterval = time.Second * 5
+			}
 			if diff > time.Second {
 				b.timeReport = fmt.Sprintf("Done in %s", humanize.RelTime(start, now, "", ""))
 			} else {
@@ -72,8 +79,8 @@ func (b *Browser) getFiles(render bool) {
 		fileList := make([]File, len(fs))
 		l.Print(fmt.Sprintf("Pulled %d files for %s", len(fs), path))
 		b.loading = &model.LoadingInfo{
-			Item:  0,
-			Total: len(fs),
+			Item:   0,
+			Total:  len(fs),
 			Render: render,
 		}
 		for x, f := range fs {
@@ -123,6 +130,7 @@ func New(root string) (*Browser, error) {
 		sort:              model.SortSize,
 		confirmations:     make([]model.Confirmation, 0),
 		autoUpdateEnabled: false,
+		reloadInterval:    time.Second * 5,
 	}
 	b.getFiles(true)
 	b.setSize(h, w)
@@ -135,7 +143,7 @@ func (b *Browser) Run() {
 	for {
 		b.Render()
 		select {
-		case <-time.After(time.Second * 5):
+		case <-time.After(b.reloadInterval):
 			if b.loading != nil {
 				break
 			}
