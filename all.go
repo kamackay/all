@@ -23,8 +23,8 @@ const (
 
 type Opts struct {
 	Version   bool   `help:"Print Version"`
-	Browser   bool   `short:"v" help:"Run Browser"`
-	Verbose   bool   `short:"b" help:"Verbose"`
+	Browser   bool   `short:"b" help:"Run Browser"`
+	Verbose   bool   `short:"v" help:"Verbose"`
 	Directory string `arg:"d" help:"Directory" default:"."`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
