@@ -29,6 +29,7 @@ type Opts struct {
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
 	FirstOnly bool   `short:"f" help:"Only show the first level of the filetree"`
+	FilesOnly bool   `short:"F" help:"Only Print Files, Exclude all directories"`
 	Regex     string `short:"r" help:"Search for files that match this regex in it's entirety (Search does a substring search)"`
 	Search    string `short:"s" help:"Search all files in this folder for this text" default:""`
 	NoCase    bool   `short:"i" help:"Use Case Insensitivity for Search"`
@@ -52,7 +53,9 @@ func printFolder(dir string, index int, opts Opts, cache files.FileCache) {
 	fs := files.GetFiles(dir)
 	for _, file := range fs {
 		if file.IsDir() {
-			printPath(path.Join(dir, file.Name()), index, true, opts, &cache)
+			if !opts.FilesOnly {
+				printPath(path.Join(dir, file.Name()), index, true, opts, &cache)
+			}
 			if !opts.FirstOnly {
 				printFolder(path.Join(dir, file.Name()), index+1, opts, cache)
 			}
