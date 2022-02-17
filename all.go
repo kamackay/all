@@ -27,6 +27,7 @@ type Opts struct {
 	Verbose   bool   `short:"v" help:"Verbose"`
 	Directory string `arg:"d" help:"Directory" default:"."`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
+	NoEmpty   bool   `short:"e" help:"Don't show empty files and folders'"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
 	FirstOnly bool   `short:"f" help:"Only show the first level of the filetree"`
 	FilesOnly bool   `short:"F" help:"Only Print Files, Exclude all directories"`
@@ -42,7 +43,7 @@ func printPath(file string, index int, isDir bool, opts Opts, cache *files.FileC
 	} else {
 		size = files.GetFileSize(file)
 	}
-	if opts.Large && size < Gig {
+	if opts.Large && size < Gig || opts.NoEmpty && size == 0 {
 		// File is less than a gig, quit
 		return
 	}
