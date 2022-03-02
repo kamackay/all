@@ -10,10 +10,13 @@ import (
 	"github.com/kamackay/all/l"
 	"github.com/kamackay/all/utils"
 	"github.com/kamackay/all/version"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -26,6 +29,7 @@ type Opts struct {
 	Browser   bool   `short:"b" help:"Run Browser"`
 	Verbose   bool   `short:"v" help:"Verbose"`
 	Directory string `arg:"d" help:"Directory" default:"."`
+	Sort      string `short:"S" enum:"size,name,none" help:"Sorting options" default:"none"`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	NoEmpty   bool   `short:"e" help:"Don't show empty files and folders'"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
@@ -36,7 +40,7 @@ type Opts struct {
 	NoCase    bool   `short:"i" help:"Use Case Insensitivity for Search"`
 }
 
-func printPath(file string, index int, isDir bool, opts Opts, cache *files.FileCache) {
+func printPath(file string, isDir bool, opts Opts, cache *files.FileCache) {
 	var size int64
 	var count uint
 	if isDir {
@@ -57,19 +61,35 @@ func printPath(file string, index int, isDir bool, opts Opts, cache *files.FileC
 		additional)
 }
 
-func printFolder(dir string, index int, opts Opts, cache files.FileCache) {
-	fs := files.GetFiles(dir)
-	for _, file := range fs {
-		if file.IsDir() {
-			if !opts.FilesOnly {
-				printPath(path.Join(dir, file.Name()), index, true, opts, &cache)
-			}
-			if !opts.FirstOnly {
-				printFolder(path.Join(dir, file.Name()), index+1, opts, cache)
-			}
-		} else {
-			printPath(path.Join(dir, file.Name()), index, false, opts, &cache)
+func printFolder(dir string, opts Opts, cache files.FileCache) {
+	fileList := files.GetFiles(dir)
+	sort.Slice(fileList, func(i, j int) bool {
+		switch opts.Sort {
+		default:
+		case "none":
+			break
+		case "name":
+			return strings.Compare(strings.ToLower(fileList[i].Name()), strings.ToLower(fileList[j].Name())) < 0
+		case "size":
+			return fileList[i].Size() > fileList[j].Size()
 		}
+		return true
+	})
+	for _, f := range fileList {
+		handleFile(f, dir, opts, cache)
+	}
+}
+
+func handleFile(f fs.FileInfo, dir string, opts Opts, cache files.FileCache) {
+	if f.IsDir() {
+		if !opts.FilesOnly {
+			printPath(path.Join(dir, f.Name()), true, opts, &cache)
+		}
+		if !opts.FirstOnly {
+			printFolder(path.Join(dir, f.Name()), opts, cache)
+		}
+	} else {
+		printPath(path.Join(dir, f.Name()), false, opts, &cache)
 	}
 }
 
@@ -144,7 +164,7 @@ func main() {
 		return
 	}
 
-	printFolder(base, 0, opts, make(files.FileCache))
+	printFolder(base, opts, make(files.FileCache))
 
 	if time.Now().Sub(start) > 100*time.Millisecond {
 		fmt.Printf("Done in %s\n", humanize.RelTime(start, time.Now(), "", ""))

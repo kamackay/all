@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/kamackay/all/files"
 	"math"
 	"regexp"
 )
@@ -76,4 +77,12 @@ func NilCheckElse(obj interface{}, action func(), elseAction func()) {
 	} else {
 		elseAction()
 	}
+}
+
+func ScrapeChannel(items <-chan files.File) []files.File {
+	list := make([]files.File, 0)
+	for file := range items {
+		list = append(list, file)
+	}
+	return list
 }
