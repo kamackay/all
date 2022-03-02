@@ -38,16 +38,23 @@ type Opts struct {
 
 func printPath(file string, index int, isDir bool, opts Opts, cache *files.FileCache) {
 	var size int64
+	var count uint
 	if isDir {
-		size = files.GetFolderSize(file, *cache)
+		size, count = files.GetFolderInfo(file, *cache)
 	} else {
 		size = files.GetFileSize(file)
+	}
+	var additional = ""
+	if isDir && opts.Verbose {
+		// Add info on file count
+		additional = fmt.Sprintf(" (#%d)", count)
 	}
 	if opts.Large && size < Gig || opts.NoEmpty && size == 0 {
 		// File is less than a gig, quit
 		return
 	}
-	fmt.Printf("%s%s\t- %s\n", utils.Indentation(index), utils.FormatSize(uint64(size), opts.Humanize), file)
+	fmt.Printf("%s\t- %s%s\n", utils.FormatSize(uint64(size), opts.Humanize), file,
+		additional)
 }
 
 func printFolder(dir string, index int, opts Opts, cache files.FileCache) {

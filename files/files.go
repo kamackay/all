@@ -2,6 +2,7 @@ package files
 
 import (
 	"fmt"
+	"github.com/kamackay/all/model"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -9,12 +10,13 @@ import (
 	"path/filepath"
 )
 
-type FileCache = map[string]os.FileInfo
+type FileCache = map[string]*model.FileBean
 
 func GetSize(path string, file fs.FileInfo) int64 {
 	filename := filepath.Join(path, file.Name())
 	if file.IsDir() {
-		return GetFolderSize(filename, make(FileCache))
+		size, _ := GetFolderInfo(filename, make(FileCache))
+		return size
 	} else {
 		return GetFileSize(filename)
 	}
@@ -90,26 +92,31 @@ func ScanFilesWorker(dir string, output chan<- File) {
 	}
 }
 
-func GetFolderSize(pathName string, cache FileCache) int64 {
+func GetFolderInfo(pathName string, cache FileCache) (int64, uint) {
 	var size int64
+	var count uint
 	if val, ok := cache[pathName]; ok && val != nil {
-		return val.Size()
+		return val.Size(), val.Count
 	}
 	err := filepath.WalkDir(pathName, func(_ string, d os.DirEntry, err error) error {
-		cache[path.Join(pathName, d.Name())], _ = d.Info()
+		fullPath := path.Join(pathName, d.Name())
+		info, _ := d.Info()
+		cache[fullPath] = model.MakeFileBean(info, 0)
 		if err != nil {
 			return nil
 		}
 		if d.IsDir() {
 			return nil
+		} else {
+			count++
 		}
 		size += getSize(d)
 		return nil
 	})
 	if err != nil {
-		return 0
+		return 0, 0
 	}
-	return size
+	return size, count
 }
 
 func getSize(entry os.DirEntry) int64 {

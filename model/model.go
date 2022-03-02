@@ -1,5 +1,7 @@
 package model
 
+import "os"
+
 type SortType int
 
 const (
@@ -7,11 +9,24 @@ const (
 	SortName
 )
 
+type FileBean struct {
+	info  os.FileInfo
+	Count uint
+}
+
+func (bean FileBean) Size() int64 {
+	return bean.info.Size()
+}
+
+func MakeFileBean(info os.FileInfo, count uint) *FileBean {
+	return &FileBean{Count: count, info: info}
+}
+
 type LoadingInfo struct {
 	Item    int
 	Total   int
 	Current string
-	Render bool
+	Render  bool
 }
 
 type FileMode struct {
