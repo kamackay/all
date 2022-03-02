@@ -1,6 +1,6 @@
 module github.com/kamackay/all
 
-go 1.14
+go 1.17
 
 require (
 	github.com/alecthomas/kong v0.2.11
