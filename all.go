@@ -29,7 +29,7 @@ type Opts struct {
 	Verbose   bool   `short:"v" help:"Verbose"`
 	Quiet     bool   `short:"q" help:"Only Log file info, exclude logs like time to process"`
 	Directory string `arg:"d" help:"Directory" default:"."`
-	Sort      string `short:"S" enum:"size,name,none" help:"Sorting options" default:"none"`
+	Sort      string `short:"S" enum:"size,name,none" help:"Sorting options" default:"name"`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	NoEmpty   bool   `short:"e" help:"Don't show empty files and folders'"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
