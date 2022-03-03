@@ -16,7 +16,7 @@ func GetSize(path string, file fs.FileInfo) int64 {
 	filename := filepath.Join(path, file.Name())
 	if file.IsDir() {
 		size, _ := GetFolderInfo(filename, make(FileCache))
-		return size
+		return int64(size)
 	} else {
 		return GetFileSize(filename)
 	}
@@ -67,6 +67,54 @@ func GetFiles(filename string) []fs.FileInfo {
 	return files
 }
 
+func GetFilesFirstLevel(filename string, cache FileCache) []*model.FileBean {
+	fList, err := ioutil.ReadDir(filename)
+	fileList := make([]*model.FileBean, 0)
+	if err != nil {
+		fmt.Printf("%+v\n", err)
+		return fileList
+	}
+	for _, f := range fList {
+		fullPath := path.Join(filename, f.Name())
+		fileList = append(fileList, convertInfoToBean(fullPath, f, cache))
+	}
+	return fileList
+}
+
+func GetFilesRecursive(dir string, cache FileCache) []*model.FileBean {
+	list := make([]*model.FileBean, 0)
+	_ = filepath.WalkDir(dir, func(subPath string, d os.DirEntry, err error) error {
+		if val, ok := cache[subPath]; ok && val != nil {
+			list = append(list, val)
+			return nil
+		}
+		if err != nil {
+			return nil
+		}
+		info, err := d.Info()
+		if err != nil {
+			return nil
+		}
+		list = append(list, convertInfoToBean(subPath, info, cache))
+		return nil
+	})
+	return list
+}
+
+func convertInfoToBean(filePath string, f fs.FileInfo, cache FileCache) *model.FileBean {
+	if val, ok := cache[filePath]; ok && val != nil {
+		return val
+	}
+	if f.IsDir() {
+		size, count := GetFolderInfo(filePath, cache)
+		return model.MakeFileBean(filePath, f, count, size)
+	} else {
+		bean := model.MakeFileBean(filePath, f, 0, uint64(f.Size()))
+		cache[filePath] = bean
+		return bean
+	}
+}
+
 func ScanFiles(dir string) <-chan File {
 	files := make(chan File)
 	go func() {
@@ -92,16 +140,19 @@ func ScanFilesWorker(dir string, output chan<- File) {
 	}
 }
 
-func GetFolderInfo(pathName string, cache FileCache) (int64, uint) {
-	var size int64
+func GetFolderInfo(pathName string, cache FileCache) (uint64, uint) {
+	var size uint64
 	var count uint
 	if val, ok := cache[pathName]; ok && val != nil {
-		return val.Size(), val.Count
+		return val.Size, val.Count
 	}
-	err := filepath.WalkDir(pathName, func(_ string, d os.DirEntry, err error) error {
-		fullPath := path.Join(pathName, d.Name())
+	err := filepath.WalkDir(pathName, func(fullPath string, d os.DirEntry, err error) error {
+		if val, ok := cache[pathName]; ok && val != nil {
+			count++
+			size += val.Size
+			return nil
+		}
 		info, _ := d.Info()
-		cache[fullPath] = model.MakeFileBean(info, 0)
 		if err != nil {
 			return nil
 		}
@@ -110,7 +161,9 @@ func GetFolderInfo(pathName string, cache FileCache) (int64, uint) {
 		} else {
 			count++
 		}
-		size += getSize(d)
+		currentSize := uint64(getSize(d))
+		size += currentSize
+		cache[fullPath] = model.MakeFileBean(fullPath, info, 0, currentSize)
 		return nil
 	})
 	if err != nil {

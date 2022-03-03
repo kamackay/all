@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	Tab = "  "
+	Tab   = "  "
+	Space = " "
 )
 
 func Indentation(index int) string {
@@ -17,6 +18,14 @@ func Indentation(index int) string {
 		str += Tab
 	}
 	return str + "| "
+}
+
+func Spaces(index int) string {
+	str := ""
+	for i := 1; i < index; i++ {
+		str += Space
+	}
+	return str
 }
 
 func FormatSize(sizeBytes uint64, human bool) string {
