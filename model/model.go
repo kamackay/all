@@ -45,6 +45,8 @@ type Confirmation struct {
 	Action  func()
 }
 
+type SortFunction = func(i, j int) bool
+
 func SortTypeName(sortType SortType) string {
 	switch sortType {
 	case SortName:

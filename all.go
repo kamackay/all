@@ -29,7 +29,7 @@ type Opts struct {
 	Verbose   bool   `short:"v" help:"Verbose"`
 	Quiet     bool   `short:"q" help:"Only Log file info, exclude logs like time to process"`
 	Directory string `arg:"d" help:"Directory" default:"."`
-	Sort      string `short:"S" enum:"size,name,none" help:"Sorting options" default:"name"`
+	Sort      string `short:"S" enum:"size,size-invert,name,none" help:"Sorting options" default:"name"`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	NoEmpty   bool   `short:"e" help:"Don't show empty files and folders'"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
@@ -144,18 +144,29 @@ func main() {
 	} else {
 		fileList = files.GetFilesRecursive(base, cache)
 	}
-	sort.Slice(fileList, func(i, j int) bool {
+	sorter := func() model.SortFunction {
 		switch opts.Sort {
 		default:
 		case "none":
 			break
 		case "name":
-			return strings.Compare(strings.ToLower(fileList[i].Name), strings.ToLower(fileList[j].Name)) < 0
+			return func(i, j int) bool {
+				return strings.Compare(strings.ToLower(fileList[i].Name), strings.ToLower(fileList[j].Name)) < 0
+			}
+		case "size-invert":
+			return func(i, j int) bool {
+				return fileList[i].Size > fileList[j].Size
+			}
 		case "size":
-			return fileList[i].Size > fileList[j].Size
+			return func(i, j int) bool {
+				return fileList[i].Size < fileList[j].Size
+			}
 		}
-		return i < j
-	})
+		return func(i, j int) bool {
+			return i < j
+		}
+	}()
+	sort.Slice(fileList, sorter)
 
 	for _, f := range fileList {
 		printPath(f, opts)
