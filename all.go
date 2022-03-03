@@ -8,24 +8,29 @@ import (
 	"github.com/kamackay/all/browser"
 	"github.com/kamackay/all/files"
 	"github.com/kamackay/all/l"
+	"github.com/kamackay/all/model"
 	"github.com/kamackay/all/utils"
 	"github.com/kamackay/all/version"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strings"
 	"time"
 )
 
 const (
-	Gig = 1000000000
+	Gig             = 1000000000
+	FileSizeSpacing = 12
 )
 
 type Opts struct {
 	Version   bool   `help:"Print Version"`
 	Browser   bool   `short:"b" help:"Run Browser"`
 	Verbose   bool   `short:"v" help:"Verbose"`
+	Quiet     bool   `short:"q" help:"Only Log file info, exclude logs like time to process"`
 	Directory string `arg:"d" help:"Directory" default:"."`
+	Sort      string `short:"S" enum:"size,name,none" help:"Sorting options" default:"none"`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	NoEmpty   bool   `short:"e" help:"Don't show empty files and folders'"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
@@ -36,41 +41,23 @@ type Opts struct {
 	NoCase    bool   `short:"i" help:"Use Case Insensitivity for Search"`
 }
 
-func printPath(file string, index int, isDir bool, opts Opts, cache *files.FileCache) {
-	var size int64
-	var count uint
-	if isDir {
-		size, count = files.GetFolderInfo(file, *cache)
-	} else {
-		size = files.GetFileSize(file)
+func printPath(file *model.FileBean, opts Opts) {
+	if file.IsDir() && opts.FilesOnly {
+		return
 	}
+	size := file.Size
 	var additional = ""
-	if isDir && opts.Verbose {
+	if file.IsDir() && opts.Verbose {
 		// Add info on file count
-		additional = fmt.Sprintf(" (#%d)", count)
+		additional = fmt.Sprintf(" (#%d)", file.Count)
 	}
 	if opts.Large && size < Gig || opts.NoEmpty && size == 0 {
 		// File is less than a gig, quit
 		return
 	}
-	fmt.Printf("%s\t- %s%s\n", utils.FormatSize(uint64(size), opts.Humanize), file,
+	sizeString := utils.FormatSize(size, opts.Humanize)
+	fmt.Printf("%s%s- %s%s\n", sizeString, utils.Spaces(FileSizeSpacing-len(sizeString)), file.Name,
 		additional)
-}
-
-func printFolder(dir string, index int, opts Opts, cache files.FileCache) {
-	fs := files.GetFiles(dir)
-	for _, file := range fs {
-		if file.IsDir() {
-			if !opts.FilesOnly {
-				printPath(path.Join(dir, file.Name()), index, true, opts, &cache)
-			}
-			if !opts.FirstOnly {
-				printFolder(path.Join(dir, file.Name()), index+1, opts, cache)
-			}
-		} else {
-			printPath(path.Join(dir, file.Name()), index, false, opts, &cache)
-		}
-	}
 }
 
 func main() {
@@ -144,9 +131,32 @@ func main() {
 		return
 	}
 
-	printFolder(base, 0, opts, make(files.FileCache))
+	cache := make(files.FileCache)
 
-	if time.Now().Sub(start) > 100*time.Millisecond {
+	var fileList []*model.FileBean
+	if opts.FirstOnly {
+		fileList = files.GetFilesFirstLevel(base, cache)
+	} else {
+		fileList = files.GetFilesRecursive(base, cache)
+	}
+	sort.Slice(fileList, func(i, j int) bool {
+		switch opts.Sort {
+		default:
+		case "none":
+			break
+		case "name":
+			return strings.Compare(strings.ToLower(fileList[i].Name), strings.ToLower(fileList[j].Name)) < 0
+		case "size":
+			return fileList[i].Size > fileList[j].Size
+		}
+		return i < j
+	})
+
+	for _, f := range fileList {
+		printPath(f, opts)
+	}
+
+	if !opts.Quiet && time.Now().Sub(start) > 100*time.Millisecond {
 		fmt.Printf("Done in %s\n", humanize.RelTime(start, time.Now(), "", ""))
 	}
 	ctx.Exit(0)

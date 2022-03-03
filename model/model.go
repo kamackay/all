@@ -12,14 +12,21 @@ const (
 type FileBean struct {
 	info  os.FileInfo
 	Count uint
+	Name  string
+	Size  uint64
 }
 
-func (bean FileBean) Size() int64 {
-	return bean.info.Size()
+func (bean FileBean) IsDir() bool {
+	return bean.info.IsDir()
 }
 
-func MakeFileBean(info os.FileInfo, count uint) *FileBean {
-	return &FileBean{Count: count, info: info}
+func MakeFileBean(name string, info os.FileInfo, count uint, size uint64) *FileBean {
+	return &FileBean{
+		Name:  name,
+		Count: count,
+		info:  info,
+		Size:  size,
+	}
 }
 
 type LoadingInfo struct {

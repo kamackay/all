@@ -2,12 +2,14 @@ package utils
 
 import (
 	"fmt"
+	"github.com/kamackay/all/files"
 	"math"
 	"regexp"
 )
 
 const (
-	Tab = "  "
+	Tab   = "  "
+	Space = " "
 )
 
 func Indentation(index int) string {
@@ -16,6 +18,14 @@ func Indentation(index int) string {
 		str += Tab
 	}
 	return str + "| "
+}
+
+func Spaces(index int) string {
+	str := ""
+	for i := 1; i < index; i++ {
+		str += Space
+	}
+	return str
 }
 
 func FormatSize(sizeBytes uint64, human bool) string {
@@ -76,4 +86,12 @@ func NilCheckElse(obj interface{}, action func(), elseAction func()) {
 	} else {
 		elseAction()
 	}
+}
+
+func ScrapeChannel(items <-chan files.File) []files.File {
+	list := make([]files.File, 0)
+	for file := range items {
+		list = append(list, file)
+	}
+	return list
 }
