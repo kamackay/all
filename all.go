@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	Gig             = 1000000000
-	FileSizeSpacing = 12
+	Gig = 1000000000
 )
 
 type Opts struct {
@@ -45,6 +44,12 @@ func printPath(file *model.FileBean, opts Opts) {
 	if file.IsDir() && opts.FilesOnly {
 		return
 	}
+	var spacing int
+	if opts.Humanize {
+		spacing = 11
+	} else {
+		spacing = 16
+	}
 	size := file.Size
 	var additional = ""
 	if file.IsDir() && opts.Verbose {
@@ -56,7 +61,7 @@ func printPath(file *model.FileBean, opts Opts) {
 		return
 	}
 	sizeString := utils.FormatSize(size, opts.Humanize)
-	fmt.Printf("%s%s- %s%s\n", sizeString, utils.Spaces(FileSizeSpacing-len(sizeString)), file.Name,
+	fmt.Printf("%s%s- %s%s\n", sizeString, utils.Spaces(spacing-len(sizeString)), file.Name,
 		additional)
 }
 
