@@ -23,24 +23,7 @@ const (
 	Gig = 1000000000
 )
 
-type Opts struct {
-	Version   bool   `help:"Print Version"`
-	Browser   bool   `short:"b" help:"Run Browser"`
-	Verbose   bool   `short:"v" help:"Verbose"`
-	Quiet     bool   `short:"q" help:"Only Log file info, exclude logs like time to process"`
-	Directory string `arg:"d" help:"Directory" default:"."`
-	Sort      string `short:"S" enum:"size,size-invert,name,none" help:"Sorting options" default:"name"`
-	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
-	NoEmpty   bool   `short:"e" help:"Don't show empty files and folders'"`
-	Large     bool   `short:"G" help:"Only print files over 1 GB"`
-	FirstOnly bool   `short:"f" help:"Only show the first level of the filetree"`
-	FilesOnly bool   `short:"F" help:"Only Print Files, Exclude all directories"`
-	Regex     string `short:"r" help:"Search for files that match this regex in it's entirety (Search does a substring search)"`
-	Search    string `short:"s" help:"Search all files in this folder for this text" default:""`
-	NoCase    bool   `short:"i" help:"Use Case Insensitivity for Search"`
-}
-
-func printPath(file *model.FileBean, opts Opts) {
+func printPath(file *model.FileBean, opts model.Opts) {
 	if file.IsDir() && opts.FilesOnly {
 		return
 	}
@@ -56,6 +39,9 @@ func printPath(file *model.FileBean, opts Opts) {
 		// Add info on file count
 		additional = fmt.Sprintf(" (#%d)", file.Count)
 	}
+	if opts.Verbose {
+		additional += fmt.Sprintf(" [%s]", file.LastModified().Format(time.RFC3339))
+	}
 	if opts.Large && size < Gig || opts.NoEmpty && size == 0 {
 		// File is less than a gig, quit
 		return
@@ -68,7 +54,7 @@ func printPath(file *model.FileBean, opts Opts) {
 func main() {
 	red := color.New(color.FgRed)
 	green := color.New(color.FgGreen)
-	var opts Opts
+	var opts model.Opts
 	ctx := kong.Parse(&opts)
 
 	start := time.Now()
@@ -149,6 +135,10 @@ func main() {
 		default:
 		case "none":
 			break
+		case "time":
+			return func(i, j int) bool {
+				return fileList[i].LastModified().After(fileList[j].LastModified())
+			}
 		case "name":
 			return func(i, j int) bool {
 				return strings.Compare(strings.ToLower(fileList[i].Name), strings.ToLower(fileList[j].Name)) < 0
@@ -168,8 +158,14 @@ func main() {
 	}()
 	sort.Slice(fileList, sorter)
 
-	for _, f := range fileList {
-		printPath(f, opts)
+	if opts.Reverse {
+		for x := len(fileList) - 1; x >= 0; x-- {
+			printPath(fileList[x], opts)
+		}
+	} else {
+		for _, f := range fileList {
+			printPath(f, opts)
+		}
 	}
 
 	if !opts.Quiet && time.Now().Sub(start) > 100*time.Millisecond {

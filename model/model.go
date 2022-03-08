@@ -1,6 +1,9 @@
 package model
 
-import "os"
+import (
+	"os"
+	"time"
+)
 
 type SortType int
 
@@ -18,6 +21,10 @@ type FileBean struct {
 
 func (bean FileBean) IsDir() bool {
 	return bean.info.IsDir()
+}
+
+func (bean FileBean) LastModified() time.Time {
+	return bean.info.ModTime()
 }
 
 func MakeFileBean(name string, info os.FileInfo, count uint, size uint64) *FileBean {
