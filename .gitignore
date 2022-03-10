@@ -1,5 +1,5 @@
 .idea/
 ignore/
 test.sh
-
+all
 dist/

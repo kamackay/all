@@ -22,10 +22,6 @@ func (bean FileBean) LastModified() time.Time {
 	return bean.info.ModTime()
 }
 
-func (bean FileBean) Created() time.Time {
-	return time.Unix(bean.stat.Ctimespec.Sec, bean.stat.Ctimespec.Nsec)
-}
-
 func MakeFileBean(name string, info os.FileInfo, count uint, size uint64) *FileBean {
 	stat := info.Sys().(*syscall.Stat_t)
 	return &FileBean{
