@@ -136,6 +136,7 @@ func main() {
 		case "none":
 			break
 		case "time":
+		case "modified":
 			return func(i, j int) bool {
 				return fileList[i].LastModified().After(fileList[j].LastModified())
 			}
@@ -143,9 +144,9 @@ func main() {
 			return func(i, j int) bool {
 				return strings.Compare(strings.ToLower(fileList[i].Name), strings.ToLower(fileList[j].Name)) < 0
 			}
-		case "size-invert":
+		case "created":
 			return func(i, j int) bool {
-				return fileList[i].Size > fileList[j].Size
+				return fileList[i].Created().After(fileList[j].Created())
 			}
 		case "size":
 			return func(i, j int) bool {
