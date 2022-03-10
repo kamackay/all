@@ -6,7 +6,7 @@ type Opts struct {
 	Verbose   bool   `short:"v" help:"Verbose"`
 	Quiet     bool   `short:"q" help:"Only Log file info, exclude logs like time to process"`
 	Directory string `arg:"d" help:"Directory" default:"."`
-	Sort      string `short:"S" enum:"size,time,name,none" help:"Sorting options" default:"name"`
+	Sort      string `short:"S" enum:"size,time,name,none" help:"Sorting options. One of size,time,name,none" default:"name"`
 	Reverse   bool   `short:"r" help:"Reverse order of the list"`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	NoEmpty   bool   `short:"e" help:"Don't show empty files and folders'"`
