@@ -67,23 +67,16 @@ func GetFiles(filename string) []fs.FileInfo {
 	return files
 }
 
-func GetFilesFirstLevel(filename string, cache FileCache) []*model.FileBean {
-	fList, err := ioutil.ReadDir(filename)
-	fileList := make([]*model.FileBean, 0)
-	if err != nil {
-		fmt.Printf("%+v\n", err)
-		return fileList
-	}
-	for _, f := range fList {
-		fullPath := path.Join(filename, f.Name())
-		fileList = append(fileList, convertInfoToBean(fullPath, f, cache))
-	}
-	return fileList
+func GetFilesFirstLevel(dir string, cache FileCache) []*model.FileBean {
+	return WalkFiles(dir, cache, true)
 }
 
-func GetFilesRecursive(dir string, cache FileCache) []*model.FileBean {
+func WalkFiles(dir string, cache FileCache, topOnly bool) []*model.FileBean {
 	list := make([]*model.FileBean, 0)
 	_ = filepath.WalkDir(dir, func(subPath string, d os.DirEntry, err error) error {
+		if topOnly && path.Dir(subPath) != dir {
+			return nil
+		}
 		if val, ok := cache[subPath]; ok && val != nil {
 			list = append(list, val)
 			return nil
@@ -99,6 +92,10 @@ func GetFilesRecursive(dir string, cache FileCache) []*model.FileBean {
 		return nil
 	})
 	return list
+}
+
+func GetFilesRecursive(dir string, cache FileCache) []*model.FileBean {
+	return WalkFiles(dir, cache, false)
 }
 
 func convertInfoToBean(filePath string, f fs.FileInfo, cache FileCache) *model.FileBean {
