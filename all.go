@@ -128,7 +128,7 @@ func main() {
 	if opts.FirstOnly {
 		fileList = files.GetFilesFirstLevel(base, cache)
 	} else {
-		fileList = files.GetFilesRecursive(base, cache)
+		fileList = files.GetFilesRecursive(base)
 	}
 	sorter := func() model.SortFunction {
 		switch opts.Sort {

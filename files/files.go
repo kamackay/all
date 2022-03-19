@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
+	"strings"
 )
 
 type FileCache = map[string]*model.FileBean
@@ -94,8 +96,32 @@ func WalkFiles(dir string, cache FileCache, topOnly bool) []*model.FileBean {
 	return list
 }
 
-func GetFilesRecursive(dir string, cache FileCache) []*model.FileBean {
-	return WalkFiles(dir, cache, false)
+func GetFilesRecursive(dir string) []*model.FileBean {
+	fileInfos, err := ioutil.ReadDir(dir)
+	beans := make([]*model.FileBean, 0)
+	if err != nil {
+		return beans
+	}
+	sort.Slice(fileInfos, func(i, j int) bool {
+		return strings.Compare(fileInfos[i].Name(), fileInfos[j].Name()) > 0
+	})
+	for _, f := range fileInfos {
+		filePath := path.Join(dir, f.Name())
+		if f.IsDir() {
+			subFiles := GetFilesRecursive(filePath)
+			var size uint64
+			for _, subFile := range subFiles {
+				size += subFile.Size
+			}
+			beans = append(beans, model.MakeFileBean(path.Join(dir, f.Name()), f, uint(len(subFiles)), size))
+			for _, subFile := range subFiles {
+				beans = append(beans, subFile)
+			}
+		} else {
+			beans = append(beans, model.MakeFileBean(path.Join(dir, f.Name()), f, 1, uint64(f.Size())))
+		}
+	}
+	return beans
 }
 
 func convertInfoToBean(filePath string, f fs.FileInfo, cache FileCache) *model.FileBean {
