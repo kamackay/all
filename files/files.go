@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -32,24 +33,6 @@ func CountChildren(file string) uint {
 		return 0
 	}
 	return uint(len(files))
-}
-
-func CountChildrenRecursive(pathName string) uint {
-	var count uint
-	err := filepath.WalkDir(pathName, func(_ string, d os.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
-		if d.IsDir() {
-			return nil
-		}
-		count++
-		return nil
-	})
-	if err != nil {
-		return 0
-	}
-	return count
 }
 
 func GetFileSize(file string) int64 {
@@ -115,10 +98,12 @@ func GetFilesRecursive(dir string) []*model.FileBean {
 		waiter := semaphore.NewWeighted(1)
 		chans = append(chans, waiter)
 		f := f
-		waiter.Acquire(ctx, 1)
-		max := semaphore.NewWeighted(16)
+		_ = waiter.Acquire(ctx, 1)
+		max := semaphore.NewWeighted(int64(runtime.NumCPU() * 2))
 		go func() {
-			max.Acquire(ctx, 1)
+			if err := max.Acquire(ctx, 1); err != nil {
+				return
+			}
 			defer func() {
 				waiter.Release(1)
 				sem.Release(1)
@@ -130,19 +115,26 @@ func GetFilesRecursive(dir string) []*model.FileBean {
 				for _, subFile := range subFiles {
 					size += subFile.Size
 				}
-				sem.Acquire(ctx, 1)
+				if err := sem.Acquire(ctx, 1); err != nil {
+					return
+				}
 				beans = append(beans, model.MakeFileBean(path.Join(dir, f.Name()), f, uint(len(subFiles)), size))
 				for _, subFile := range subFiles {
 					beans = append(beans, subFile)
 				}
 			} else {
-				sem.Acquire(ctx, 1)
+				if err := sem.Acquire(ctx, 1); err != nil {
+					return
+				}
 				beans = append(beans, model.MakeFileBean(path.Join(dir, f.Name()), f, 1, uint64(f.Size())))
 			}
 		}()
 	}
 	for _, c := range chans {
-		c.Acquire(ctx, 1)
+		err := c.Acquire(ctx, 1)
+		if err != nil {
+			continue
+		}
 	}
 	return beans
 }
