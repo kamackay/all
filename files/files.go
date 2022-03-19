@@ -1,8 +1,10 @@
 package files
 
 import (
+	"context"
 	"fmt"
 	"github.com/kamackay/all/model"
+	"golang.org/x/sync/semaphore"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -105,21 +107,42 @@ func GetFilesRecursive(dir string) []*model.FileBean {
 	sort.Slice(fileInfos, func(i, j int) bool {
 		return strings.Compare(fileInfos[i].Name(), fileInfos[j].Name()) > 0
 	})
+	chans := make([]*semaphore.Weighted, 0)
+	sem := semaphore.NewWeighted(1)
+	ctx := context.Background()
 	for _, f := range fileInfos {
 		filePath := path.Join(dir, f.Name())
-		if f.IsDir() {
-			subFiles := GetFilesRecursive(filePath)
-			var size uint64
-			for _, subFile := range subFiles {
-				size += subFile.Size
+		waiter := semaphore.NewWeighted(1)
+		chans = append(chans, waiter)
+		f := f
+		waiter.Acquire(ctx, 1)
+		max := semaphore.NewWeighted(16)
+		go func() {
+			max.Acquire(ctx, 1)
+			defer func() {
+				waiter.Release(1)
+				sem.Release(1)
+				max.Release(1)
+			}()
+			if f.IsDir() {
+				subFiles := GetFilesRecursive(filePath)
+				var size uint64
+				for _, subFile := range subFiles {
+					size += subFile.Size
+				}
+				sem.Acquire(ctx, 1)
+				beans = append(beans, model.MakeFileBean(path.Join(dir, f.Name()), f, uint(len(subFiles)), size))
+				for _, subFile := range subFiles {
+					beans = append(beans, subFile)
+				}
+			} else {
+				sem.Acquire(ctx, 1)
+				beans = append(beans, model.MakeFileBean(path.Join(dir, f.Name()), f, 1, uint64(f.Size())))
 			}
-			beans = append(beans, model.MakeFileBean(path.Join(dir, f.Name()), f, uint(len(subFiles)), size))
-			for _, subFile := range subFiles {
-				beans = append(beans, subFile)
-			}
-		} else {
-			beans = append(beans, model.MakeFileBean(path.Join(dir, f.Name()), f, 1, uint64(f.Size())))
-		}
+		}()
+	}
+	for _, c := range chans {
+		c.Acquire(ctx, 1)
 	}
 	return beans
 }
