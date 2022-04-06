@@ -42,7 +42,7 @@ func printPath(file *model.FileBean, opts model.Opts) {
 	if opts.Verbose {
 		additional += fmt.Sprintf(" [%s]", file.LastModified().Format(time.RFC3339))
 	}
-	if opts.Large && size < Gig || opts.NoEmpty && size == 0 {
+	if opts.Large && size < Gig || opts.NoEmpty && size == 0 || size > opts.MaxSize || size < opts.MinSize {
 		// File is less than a gig, quit
 		return
 	}

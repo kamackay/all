@@ -11,6 +11,8 @@ type Opts struct {
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
 	NoEmpty   bool   `short:"e" help:"Don't show empty files and folders'"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
+	MinSize   uint64 `default:"0" help:"Only show files larger than or equal to this (value provided in Bytes)"`
+	MaxSize   uint64 `default:"18446744073709551615" help:"Only show files smaller than or equal to this (value provided in Bytes)"`
 	FirstOnly bool   `short:"f" help:"Only show the first level of the filetree"`
 	FilesOnly bool   `short:"F" help:"Only Print Files, Exclude all directories"`
 	Regex     string `short:"r" help:"Search for files that match this regex in it's entirety (Search does a substring search)"`
