@@ -9,6 +9,7 @@ type Opts struct {
 	Sort      string `short:"S" enum:"size,time,modified,name,none" help:"Sorting options. One of size, time (alias of modified), modified, name, none" default:"name"`
 	Reverse   bool   `short:"r" help:"Reverse order of the list"`
 	Humanize  bool   `short:"z" help:"Humanize File Sizes"`
+	NamesOnly bool   `short:"n" help:"Only Show filenames"`
 	NoEmpty   bool   `short:"e" help:"Don't show empty files and folders'"`
 	Large     bool   `short:"G" help:"Only print files over 1 GB"`
 	MinSize   uint64 `default:"0" help:"Only show files larger than or equal to this (value provided in Bytes)"`

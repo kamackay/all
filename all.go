@@ -47,8 +47,12 @@ func printPath(file *model.FileBean, opts model.Opts) {
 		return
 	}
 	sizeString := utils.FormatSize(size, opts.Humanize)
-	fmt.Printf("%s%s- %s%s\n", sizeString, utils.Spaces(spacing-len(sizeString)), file.Name,
-		additional)
+	if opts.NamesOnly {
+		fmt.Println(file.Name)
+	} else {
+		fmt.Printf("%s%s- %s%s\n", sizeString, utils.Spaces(spacing-len(sizeString)), file.Name,
+			additional)
+	}
 }
 
 func main() {
