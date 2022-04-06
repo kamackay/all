@@ -8,6 +8,7 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/nsf/termbox-go v1.1.1
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
 require (
