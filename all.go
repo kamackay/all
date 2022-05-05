@@ -159,6 +159,33 @@ func main() {
 	}()
 	sort.Slice(fileList, sorter)
 
+	defer func() {
+		if !opts.Quiet && time.Now().Sub(start) > 100*time.Millisecond {
+			fmt.Printf("Done in %s\n", humanize.RelTime(start, time.Now(), "", ""))
+		}
+		ctx.Exit(0)
+	}()
+
+	if opts.VideoScore {
+		scoreFunc := func(bean *model.FileBean) {
+			score, err := utils.GetVideoScore(bean)
+			if err != nil {
+				fmt.Printf("Error with %s: %+v\n", bean.Name, err)
+			}
+			fmt.Printf("%s: %f\n", bean.Name, score)
+		}
+		if opts.Reverse {
+			for x := len(fileList) - 1; x >= 0; x-- {
+				scoreFunc(fileList[x])
+			}
+		} else {
+			for _, f := range fileList {
+				scoreFunc(f)
+			}
+		}
+		return
+	}
+
 	if opts.Reverse {
 		for x := len(fileList) - 1; x >= 0; x-- {
 			printPath(fileList[x], opts)
@@ -169,8 +196,4 @@ func main() {
 		}
 	}
 
-	if !opts.Quiet && time.Now().Sub(start) > 100*time.Millisecond {
-		fmt.Printf("Done in %s\n", humanize.RelTime(start, time.Now(), "", ""))
-	}
-	ctx.Exit(0)
 }

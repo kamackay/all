@@ -1,10 +1,14 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/kamackay/all/files"
+	"github.com/kamackay/all/model"
 	"math"
+	"os/exec"
 	"regexp"
+	"strconv"
 )
 
 const (
@@ -94,4 +98,27 @@ func ScrapeChannel(items <-chan files.File) []files.File {
 		list = append(list, file)
 	}
 	return list
+}
+
+type Json = map[string]interface{}
+
+func GetVideoScore(bean *model.FileBean) (float64, error) {
+	out, err := exec.Command("ffprobe", bean.Name, "-show_streams", "-show_format", "-print_format", "json").Output()
+	//fmt.Println(string(out))
+	var output Json
+	err = json.Unmarshal(out, &output)
+	if err != nil {
+		return 0, err
+	}
+	durationString := output["format"].(Json)["duration"].(string)
+	duration, err := strconv.ParseFloat(durationString, 64)
+	if err != nil {
+		return 0, err
+	}
+	streamList := output["streams"].([]interface{})
+	firstStream := streamList[0].(Json)
+	height := firstStream["height"].(float64)
+	width := firstStream["width"].(float64)
+	numPixels := duration * height * width
+	return float64(bean.Size) / numPixels, nil // Bytes per pixel
 }

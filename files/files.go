@@ -82,6 +82,13 @@ func WalkFiles(dir string, cache FileCache, topOnly bool) []*model.FileBean {
 }
 
 func GetFilesRecursive(dir string) []*model.FileBean {
+	if fi, err := os.Stat(dir); err != nil {
+		// Seems like path doesn't exist
+		fmt.Printf("Error with path: %+v\n", err)
+		return make([]*model.FileBean, 0)
+	} else if !fi.IsDir() {
+		return []*model.FileBean{model.MakeFileBean(dir, fi, 1, uint64(fi.Size()))}
+	}
 	fileInfos, err := ioutil.ReadDir(dir)
 	beans := make([]*model.FileBean, 0)
 	if err != nil {
