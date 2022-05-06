@@ -117,12 +117,19 @@ func GetVideoScore(bean *model.FileBean) (float64, error) {
 			if err != nil {
 				return 0, err
 			}
-			streamList := output["streams"].([]interface{})
-			firstStream := streamList[0].(Json)
-			height := firstStream["height"].(float64)
-			width := firstStream["width"].(float64)
-			numPixels := duration * height * width
-			return (float64(bean.Size) / numPixels) * 100, nil // Bytes per pixel
+			if istreamList, ok := output["streams"]; ok {
+				streamList := istreamList.([]interface{})
+				if len(streamList) == 0 {
+					return 0, nil
+				}
+				firstStream := streamList[0].(Json)
+				height := firstStream["height"].(float64)
+				width := firstStream["width"].(float64)
+				numPixels := duration * height * width
+				return (float64(bean.Size) / numPixels) * 100, nil // Bytes per pixel
+			} else {
+				return 0, nil
+			}
 		} else {
 			return 0, nil
 		}
