@@ -103,6 +103,11 @@ func ScrapeChannel(items <-chan files.File) []files.File {
 type Json = map[string]interface{}
 
 func GetVideoScore(bean *model.FileBean) (float64, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
 	out, err := exec.Command("ffprobe", bean.Name, "-show_streams", "-show_format", "-print_format", "json").Output()
 	//fmt.Println(string(out))
 	var output Json
