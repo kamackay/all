@@ -122,7 +122,7 @@ func GetVideoScore(bean *model.FileBean) (float64, error) {
 			height := firstStream["height"].(float64)
 			width := firstStream["width"].(float64)
 			numPixels := duration * height * width
-			return float64(bean.Size) / numPixels, nil // Bytall es per pixel
+			return (float64(bean.Size) / numPixels) * 100, nil // Bytes per pixel
 		} else {
 			return 0, nil
 		}
