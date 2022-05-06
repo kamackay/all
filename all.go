@@ -57,6 +57,7 @@ func printPath(file *model.FileBean, opts model.Opts) {
 
 func main() {
 	red := color.New(color.FgRed)
+	yellow := color.New(color.FgYellow)
 	green := color.New(color.FgGreen)
 	var opts model.Opts
 	ctx := kong.Parse(&opts)
@@ -172,8 +173,10 @@ func main() {
 			if err != nil {
 				fmt.Printf("Error with %s: %+v\n", bean.Name, err)
 			}
-			if score > 15 {
+			if score > 20 {
 				red.Printf("%s: %f\n", bean.Name, score)
+			} else if score > 15 {
+				yellow.Printf("%s: %f\n", bean.Name, score)
 			} else if score > 0 {
 				fmt.Printf("%s: %f\n", bean.Name, score)
 			}
