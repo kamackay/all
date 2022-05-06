@@ -174,7 +174,7 @@ func main() {
 			}
 			if score > 15 {
 				red.Printf("%s: %f\n", bean.Name, score)
-			} else {
+			} else if score > 0 {
 				fmt.Printf("%s: %f\n", bean.Name, score)
 			}
 		}
