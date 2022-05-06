@@ -172,7 +172,11 @@ func main() {
 			if err != nil {
 				fmt.Printf("Error with %s: %+v\n", bean.Name, err)
 			}
-			fmt.Printf("%s: %f\n", bean.Name, score)
+			if score > 15 {
+				red.Printf("%s: %f\n", bean.Name, score)
+			} else {
+				fmt.Printf("%s: %f\n", bean.Name, score)
+			}
 		}
 		if opts.Reverse {
 			for x := len(fileList) - 1; x >= 0; x-- {
