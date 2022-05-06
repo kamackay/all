@@ -173,7 +173,7 @@ func main() {
 			if err != nil {
 				fmt.Printf("Error with %s: %+v\n", bean.Name, err)
 			}
-			message := fmt.Sprintf("%0.2f\t\t- %s", score, bean.Name)
+			message := fmt.Sprintf("%0.2f\t\t- %s\n", score, bean.Name)
 			if score > 20 {
 				red.Printf(message)
 			} else if score > 15 {
