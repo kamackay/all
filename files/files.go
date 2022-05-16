@@ -82,7 +82,8 @@ func WalkFiles(dir string, cache FileCache, topOnly bool) []*model.FileBean {
 }
 
 func GetFilesRecursive(dir string) []*model.FileBean {
-	if fi, err := os.Stat(dir); err != nil {
+	fi, err := os.Stat(dir)
+	if err != nil {
 		// Seems like path doesn't exist
 		fmt.Printf("Error with path: %+v\n", err)
 		return make([]*model.FileBean, 0)
@@ -97,6 +98,8 @@ func GetFilesRecursive(dir string) []*model.FileBean {
 	sort.Slice(fileInfos, func(i, j int) bool {
 		return strings.Compare(fileInfos[i].Name(), fileInfos[j].Name()) > 0
 	})
+	var totalSize uint64 = 0
+	var totalCount uint = 0
 	chans := make([]*semaphore.Weighted, 0)
 	sem := semaphore.NewWeighted(1)
 	ctx := context.Background()
@@ -127,6 +130,8 @@ func GetFilesRecursive(dir string) []*model.FileBean {
 				}
 				beans = append(beans, model.MakeFileBean(path.Join(dir, f.Name()), f, uint(len(subFiles)), size))
 				for _, subFile := range subFiles {
+					totalCount++
+					totalSize += subFile.Size
 					beans = append(beans, subFile)
 				}
 			} else {
@@ -143,6 +148,7 @@ func GetFilesRecursive(dir string) []*model.FileBean {
 			continue
 		}
 	}
+	beans = append(beans, model.MakeFileBean(dir, fi, totalCount, totalSize))
 	return beans
 }
 
