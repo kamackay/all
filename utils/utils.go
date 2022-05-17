@@ -3,7 +3,6 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kamackay/all/files"
 	"github.com/kamackay/all/model"
 	"math"
 	"os/exec"
@@ -12,17 +11,8 @@ import (
 )
 
 const (
-	Tab   = "  "
 	Space = " "
 )
-
-func Indentation(index int) string {
-	str := ""
-	for i := 1; i < index; i++ {
-		str += Tab
-	}
-	return str + "| "
-}
 
 func Spaces(index int) string {
 	str := ""
@@ -60,13 +50,6 @@ func logN(n, b float64) float64 {
 	return math.Log(n) / math.Log(b)
 }
 
-func Max(x, y int) int {
-	if x >= y {
-		return x
-	}
-	return y
-}
-
 func Min(x, y int) int {
 	if x <= y {
 		return x
@@ -78,26 +61,12 @@ func ContainsIgnoreCase(a string, r *regexp.Regexp) bool {
 	return r.MatchString(a)
 }
 
-func NilCheck(obj interface{}, action func()) {
-	if obj != nil {
-		action()
-	}
-}
-
 func NilCheckElse(obj interface{}, action func(), elseAction func()) {
 	if obj != nil {
 		action()
 	} else {
 		elseAction()
 	}
-}
-
-func ScrapeChannel(items <-chan files.File) []files.File {
-	list := make([]files.File, 0)
-	for file := range items {
-		list = append(list, file)
-	}
-	return list
 }
 
 type Json = map[string]interface{}
