@@ -5,6 +5,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
+	"github.com/gosuri/uilive"
 	"github.com/kamackay/all/browser"
 	"github.com/kamackay/all/files"
 	"github.com/kamackay/all/l"
@@ -112,18 +113,30 @@ func main() {
 			return
 		}
 		items := files.ScanFiles(base)
+		var bytes uint64 = 0
+		var filesRead uint = 0
+		x := 0
+		writer := uilive.New()
+		writer.Start()
 		for file := range items {
 			content, err := files.ReadEntire(file.Name)
 			utils.NilCheckElse(err, func() {
 				fmt.Printf("Could not read file %s: %+v\n", content, err)
 			}, func() {
+				bytes += uint64(len(content))
+				filesRead++
 				if utils.ContainsIgnoreCase(content, r) {
 					green.Printf("Found in %s\n", file.Name)
 				} else if opts.Verbose {
 					red.Printf("Not in %s\n", file.Name)
 				}
+				if x != 0 && opts.Verbose {
+					fmt.Fprintf(writer, "Read %d files (%s)\n", filesRead, utils.HumanizeBytes(bytes))
+				}
 			})
+			x++
 		}
+		writer.Stop()
 		return
 	}
 
@@ -173,7 +186,12 @@ func main() {
 			if err != nil {
 				fmt.Printf("Error with %s: %+v\n", bean.Name, err)
 			}
-			message := fmt.Sprintf("%0.2f\t\t- %s\n", score, bean.Name)
+			var message string
+			if opts.Verbose {
+				message = fmt.Sprintf("%0.2f (%s)\t\t- %s\n", score, utils.HumanizeBytes(bean.Size), bean.Name)
+			} else {
+				message = fmt.Sprintf("%0.2f\t\t- %s\n", score, bean.Name)
+			}
 			if score > 20 {
 				red.Printf(message)
 			} else if score > 15 {
