@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/kamackay/all/model"
+	"github.com/kamackay/all/unique"
 	"golang.org/x/sync/semaphore"
 	"io/fs"
 	"io/ioutil"
@@ -98,6 +99,7 @@ func GetFilesRecursive(dir string) []*model.FileBean {
 	sort.Slice(fileInfos, func(i, j int) bool {
 		return strings.Compare(fileInfos[i].Name(), fileInfos[j].Name()) > 0
 	})
+	fileInfos = unique.Infos(fileInfos)
 	var totalSize uint64 = 0
 	var totalCount uint = 0
 	chans := make([]*semaphore.Weighted, 0)
