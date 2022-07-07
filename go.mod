@@ -1,11 +1,12 @@
 module github.com/kamackay/all
 
-go 1.17
+go 1.18
 
 require (
 	github.com/alecthomas/kong v0.2.11
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.13.0
+	github.com/gosuri/uilive v0.0.4
 	github.com/nsf/termbox-go v1.1.1
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c

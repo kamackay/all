@@ -130,8 +130,10 @@ func GetFilesRecursive(dir string) []*model.FileBean {
 				}
 				beans = append(beans, model.MakeFileBean(path.Join(dir, f.Name()), f, uint(len(subFiles)), size))
 				for _, subFile := range subFiles {
-					totalCount++
-					totalSize += subFile.Size
+					if !subFile.IsDir() {
+						totalCount++
+						totalSize += subFile.Size
+					}
 					beans = append(beans, subFile)
 				}
 			} else {
