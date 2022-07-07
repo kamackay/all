@@ -123,7 +123,9 @@ func GetFilesRecursive(dir string) []*model.FileBean {
 				subFiles := GetFilesRecursive(filePath)
 				var size uint64
 				for _, subFile := range subFiles {
-					size += subFile.Size
+					if !subFile.IsDir() {
+						size += subFile.Size
+					}
 				}
 				if err := sem.Acquire(ctx, 1); err != nil {
 					return
