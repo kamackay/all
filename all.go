@@ -2,6 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/alecthomas/kong"
 	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
@@ -12,12 +19,6 @@ import (
 	"github.com/kamackay/all/model"
 	"github.com/kamackay/all/utils"
 	"github.com/kamackay/all/version"
-	"os"
-	"path/filepath"
-	"regexp"
-	"sort"
-	"strings"
-	"time"
 )
 
 const (
@@ -181,16 +182,27 @@ func main() {
 	}()
 
 	if opts.VideoScore {
-		scoreFunc := func(bean *model.FileBean) {
+		scoreFunc := func(bean *model.FileBean) *model.VideoScore {
 			score, err := utils.GetVideoScore(bean)
 			if err != nil {
-				fmt.Printf("Error with %s: %+v\n", bean.Name, err)
+				return model.NewScore(1000, bean)
 			}
+			return model.NewScore(score, bean)
+		}
+		scores := make([]*model.VideoScore, 0)
+		for _, f := range fileList {
+			scores = append(scores, scoreFunc(f))
+		}
+		sort.Slice(scores, func(i, j int) bool {
+			return scores[i].Score < scores[j].Score
+		})
+		for _, s := range scores {
 			var message string
+			score := s.Score
 			if opts.Verbose {
-				message = fmt.Sprintf("%0.2f (%s)\t\t- %s\n", score, utils.HumanizeBytes(bean.Size), bean.Name)
+				message = fmt.Sprintf("%0.2f (%s)\t\t- %s\n", score, utils.HumanizeBytes(s.Size), s.Name)
 			} else {
-				message = fmt.Sprintf("%0.2f\t\t- %s\n", score, bean.Name)
+				message = fmt.Sprintf("%0.2f\t\t- %s\n", score, s.Name)
 			}
 			if score > 20 {
 				red.Printf(message)
@@ -198,15 +210,6 @@ func main() {
 				yellow.Printf(message)
 			} else if score > 0 {
 				fmt.Printf(message)
-			}
-		}
-		if opts.Reverse {
-			for x := len(fileList) - 1; x >= 0; x-- {
-				scoreFunc(fileList[x])
-			}
-		} else {
-			for _, f := range fileList {
-				scoreFunc(f)
 			}
 		}
 		return
