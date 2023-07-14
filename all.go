@@ -181,6 +181,32 @@ func main() {
 		ctx.Exit(0)
 	}()
 
+	if opts.RmEmpty {
+		for _, f := range utils.FlipSlice(utils.Unique(fileList, func(file *model.FileBean) string { return file.Name })) {
+			if f.IsDir() {
+				empty, err := utils.IsEmpty(f.Name)
+				if err != nil {
+					red.Printf("Could not read %s: %+v\n", f.Name, err)
+					continue
+				}
+				if empty {
+					if opts.Verbose {
+						fmt.Printf("Deleting empty directory %s\n", f.Name)
+					}
+					if opts.Yes || utils.AskForConfirmation(fmt.Sprintf("Delete empty directory %s?", f.Name)) {
+						err := os.Remove(f.Name)
+						if err != nil {
+							red.Printf("Could not delete %s: %+v\n", f.Name, err)
+						} else {
+							green.Printf("Deleted %s\n", f.Name)
+						}
+					}
+				}
+			}
+		}
+		return
+	}
+
 	if opts.VideoScore {
 		scoreFunc := func(bean *model.FileBean) *model.VideoScore {
 			score, err := utils.GetVideoScore(bean)

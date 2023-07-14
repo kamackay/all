@@ -4,6 +4,7 @@ type Opts struct {
 	Version    bool   `help:"Print Version"`
 	Browser    bool   `short:"b" help:"Run Browser"`
 	VideoScore bool   `help:"Get Video Compression Score"`
+	RmEmpty    bool   `help:"Delete Empty Directories"`
 	Verbose    bool   `short:"v" help:"Verbose"`
 	Quiet      bool   `short:"q" help:"Only Log file info, exclude logs like time to process"`
 	Directory  string `arg:"d" help:"Directory" default:"."`
@@ -20,4 +21,5 @@ type Opts struct {
 	Regex      string `short:"r" help:"Search for files that match this regex in it's entirety (Search does a substring search)"`
 	Search     string `short:"s" help:"Search all files in this folder for this text" default:""`
 	NoCase     bool   `short:"i" help:"Use Case Insensitivity for Search"`
+	Yes        bool   `short:"y" help:"Answer yes to all prompts"`
 }

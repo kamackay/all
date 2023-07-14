@@ -1,13 +1,19 @@
 package utils
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/kamackay/all/model"
+	"io"
+	"log"
 	"math"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
+
+	"github.com/kamackay/all/model"
 )
 
 const (
@@ -110,4 +116,59 @@ func GetVideoScore(bean *model.FileBean) (float64, error) {
 	} else {
 		return 0, nil
 	}
+}
+
+func AskForConfirmation(s string) bool {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Printf("%s [y/n]: ", s)
+
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		response = strings.ToLower(strings.TrimSpace(response))
+
+		if response == "y" || response == "yes" {
+			return true
+		} else if response == "n" || response == "no" {
+			return false
+		}
+	}
+}
+
+func FlipSlice[T any](s []T) []T {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+	return s
+}
+
+func IsEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1) // Or f.Readdir(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err // Either not empty or error, suits both cases
+}
+
+func Unique[T any, K comparable](slice []T, accessor func(T) K) []T {
+	keys := make(map[K]bool)
+	list := make([]T, 0)
+	for _, entry := range slice {
+		key := accessor(entry)
+		if _, value := keys[key]; !value {
+			keys[key] = true
+			list = append(list, entry)
+		}
+	}
+	return list
 }
