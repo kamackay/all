@@ -35,7 +35,7 @@ jobs:
           echo "FORMULA_SUFFIX=" >> $GITHUB_ENV
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v4.3.0
         with:
           version: latest
           args: release --rm-dist --skip-validate
