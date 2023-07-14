@@ -22,11 +22,6 @@ jobs:
           echo "GOPATH=$(dirname $GITHUB_WORKSPACE)" >> $GITHUB_ENV
           echo "$(dirname $GITHUB_WORKSPACE)/bin" >> $GITHUB_PATH
 
-      - name: Get Pkger
-        run: |
-          go get github.com/markbates/pkger/cmd/pkger
-          pkger
-
       - name: Set Develop App Version
         if: github.ref == 'refs/heads/develop'
         run: |
