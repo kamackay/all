@@ -209,11 +209,12 @@ func main() {
 
 	if opts.VideoScore {
 		scoreFunc := func(bean *model.FileBean) *model.VideoScore {
+			couldRecover := utils.GetPotentialBytesToCompress(bean)
 			score, err := utils.GetVideoScore(bean)
 			if err != nil {
-				return model.NewScore(1000, bean)
+				return model.NewScore(1000, bean, couldRecover)
 			}
-			return model.NewScore(score, bean)
+			return model.NewScore(score, bean, couldRecover)
 		}
 		scores := make([]*model.VideoScore, 0)
 		for _, f := range fileList {
@@ -226,7 +227,7 @@ func main() {
 			var message string
 			score := s.Score
 			if opts.Verbose {
-				message = fmt.Sprintf("%0.2f (%s)\t\t- %s\n", score, utils.HumanizeBytes(s.Size), s.Name)
+				message = fmt.Sprintf("%0.2f (%s)\t\t- %s (R: %s)\n", score, utils.HumanizeBytes(s.Size), s.Name, utils.HumanizeBytes(uint64(s.CouldRecover)))
 			} else {
 				message = fmt.Sprintf("%0.2f\t\t- %s\n", score, s.Name)
 			}

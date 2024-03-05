@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	Space = " "
+	Space                = " "
+	TheoreticalBestScore = 10
 )
 
 func Spaces(index int) string {
@@ -115,6 +116,51 @@ func GetVideoScore(bean *model.FileBean) (float64, error) {
 		}
 	} else {
 		return 0, nil
+	}
+}
+
+func GetPotentialBytesToCompress(bean *model.FileBean) int64 {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in GetPotentialBytesToCompress", r)
+		}
+	}()
+	out, err := exec.Command("ffprobe", bean.Name, "-show_streams", "-show_format", "-print_format", "json").Output()
+	//fmt.Println(string(out))
+	var output Json
+	err = json.Unmarshal(out, &output)
+	if err != nil {
+		return 0
+	}
+	if val, ok := output["format"]; ok {
+		if duration, ok := val.(Json)["duration"]; ok {
+			durationString := duration.(string)
+			duration, err := strconv.ParseFloat(durationString, 64)
+			if err != nil {
+				return 0
+			}
+			if istreamList, ok := output["streams"]; ok {
+				streamList := istreamList.([]interface{})
+				if len(streamList) == 0 {
+					return 0
+				}
+				firstStream := streamList[0].(Json)
+				height := firstStream["height"].(float64)
+				width := firstStream["width"].(float64)
+				numPixels := duration * height * width
+				idealSize := (TheoreticalBestScore * numPixels) / 100
+				if float64(bean.Size) <= idealSize {
+					return 0
+				}
+				return int64(float64(bean.Size) - idealSize)
+			} else {
+				return 0
+			}
+		} else {
+			return 0
+		}
+	} else {
+		return 0
 	}
 }
 
