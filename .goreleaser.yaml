@@ -55,6 +55,6 @@ brews:
     commit_author:
       name: Keith MacKay
       email: keith@keithmackay.com
-    folder: Formula
+    directory: Formula
     license: MIT
     description: Filesystem CLI Tools
