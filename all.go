@@ -221,7 +221,7 @@ func main() {
 			scores = append(scores, scoreFunc(f))
 		}
 		sort.Slice(scores, func(i, j int) bool {
-			return scores[i].Score < scores[j].Score
+			return scores[i].CouldRecover < scores[j].CouldRecover
 		})
 		for _, s := range scores {
 			var message string
