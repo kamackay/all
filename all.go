@@ -227,7 +227,7 @@ func main() {
 			var message string
 			score := s.Score
 			if opts.Verbose {
-				message = fmt.Sprintf("%0.2f (%s)\t\t- %s (R: %s)\n", score, utils.HumanizeBytes(s.Size), s.Name, utils.HumanizeBytes(uint64(s.CouldRecover)))
+				message = fmt.Sprintf("%0.2f (%s)\t\t- %s (could recover: %s)\n", score, utils.HumanizeBytes(s.Size), s.Name, utils.HumanizeBytes(uint64(s.CouldRecover)))
 			} else {
 				message = fmt.Sprintf("%0.2f\t\t- %s\n", score, s.Name)
 			}
