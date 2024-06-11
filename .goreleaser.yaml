@@ -48,7 +48,7 @@ changelog:
 
 brews:
   - name: all
-    tap:
+    repository:
       owner: kamackay
       name: homebrew-tap
       branch: main
