@@ -242,13 +242,28 @@ func main() {
 		return
 	}
 
+	names := make(map[string]bool)
+
+	verifyFirstTime := func(name string) bool {
+		defer func() {
+			names[name] = true
+		}()
+		_, ok := names[name]
+		return !ok
+	}
+
 	if opts.Reverse {
 		for x := len(fileList) - 1; x >= 0; x-- {
-			printPath(fileList[x], opts)
+			f := fileList[x]
+			if verifyFirstTime(f.Name) {
+				printPath(f, opts)
+			}
 		}
 	} else {
 		for _, f := range fileList {
-			printPath(f, opts)
+			if verifyFirstTime(f.Name) {
+				printPath(f, opts)
+			}
 		}
 	}
 
