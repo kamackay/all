@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"golang.org/x/sync/semaphore"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -19,6 +22,7 @@ import (
 	"github.com/kamackay/all/model"
 	"github.com/kamackay/all/utils"
 	"github.com/kamackay/all/version"
+	"github.com/kamackay/godash/parallel"
 )
 
 const (
@@ -216,10 +220,17 @@ func main() {
 			}
 			return model.NewScore(score, bean, couldRecover)
 		}
+		sem := semaphore.NewWeighted(1)
 		scores := make([]*model.VideoScore, 0)
-		for _, f := range fileList {
-			scores = append(scores, scoreFunc(f))
-		}
+		_ = parallel.ForEach(fileList, runtime.NumCPU(), func(f *model.FileBean) error {
+			score := scoreFunc(f)
+			defer func() {
+				sem.Release(1)
+			}()
+			sem.Acquire(context.Background(), 1)
+			scores = append(scores, score)
+			return nil
+		})
 		sort.Slice(scores, func(i, j int) bool {
 			return scores[i].Score < scores[j].Score
 		})

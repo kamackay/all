@@ -1,6 +1,6 @@
 module github.com/kamackay/all
 
-go 1.18
+go 1.22.4
 
 require (
 	github.com/alecthomas/kong v0.2.11
@@ -9,10 +9,11 @@ require (
 	github.com/gosuri/uilive v0.0.4
 	github.com/nsf/termbox-go v1.1.1
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sync v0.7.0
 )
 
 require (
+	github.com/kamackay/godash v0.0.0-20240612132503-ba320bb58561 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
