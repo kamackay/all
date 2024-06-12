@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -220,17 +218,13 @@ func main() {
 			}
 			return model.NewScore(score, bean, couldRecover)
 		}
-		sem := semaphore.NewWeighted(1)
-		scores := make([]*model.VideoScore, 0)
-		_ = parallel.ForEach(fileList, runtime.NumCPU(), func(f *model.FileBean) error {
-			score := scoreFunc(f)
-			defer func() {
-				sem.Release(1)
-			}()
-			sem.Acquire(context.Background(), 1)
-			scores = append(scores, score)
-			return nil
+		scores, err := parallel.Map(fileList, runtime.NumCPU(), func(f *model.FileBean) *model.VideoScore {
+			return scoreFunc(f)
 		})
+		if err != nil {
+			red.Printf("Error in processing files: %+v\n", err)
+			return
+		}
 		sort.Slice(scores, func(i, j int) bool {
 			return scores[i].CouldRecover < scores[j].CouldRecover
 		})

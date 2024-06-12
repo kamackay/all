@@ -13,13 +13,13 @@ require (
 )
 
 require (
-	github.com/kamackay/godash v0.0.0-20240612132503-ba320bb58561 // indirect
+	github.com/kamackay/godash v1.1.0
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/samber/lo v1.39.0 // indirect
+	github.com/samber/lo v1.39.0
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
 )
