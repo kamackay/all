@@ -232,13 +232,13 @@ func main() {
 			return nil
 		})
 		sort.Slice(scores, func(i, j int) bool {
-			return scores[i].Score < scores[j].Score
+			return scores[i].CouldRecover < scores[j].CouldRecover
 		})
 		for _, s := range scores {
 			var message string
 			score := s.Score
 			if opts.Verbose {
-				message = fmt.Sprintf("%0.2f (%s)\t\t- %s (R: %s)\n", score, utils.HumanizeBytes(s.Size), s.Name, utils.HumanizeBytes(uint64(s.CouldRecover)))
+				message = fmt.Sprintf("%0.2f (%s)\t\t- %s (could recover: %s)\n", score, utils.HumanizeBytes(s.Size), s.Name, utils.HumanizeBytes(uint64(s.CouldRecover)))
 			} else {
 				message = fmt.Sprintf("%0.2f\t\t- %s\n", score, s.Name)
 			}
@@ -253,13 +253,28 @@ func main() {
 		return
 	}
 
+	names := make(map[string]bool)
+
+	verifyFirstTime := func(name string) bool {
+		defer func() {
+			names[name] = true
+		}()
+		_, ok := names[name]
+		return !ok
+	}
+
 	if opts.Reverse {
 		for x := len(fileList) - 1; x >= 0; x-- {
-			printPath(fileList[x], opts)
+			f := fileList[x]
+			if verifyFirstTime(f.Name) {
+				printPath(f, opts)
+			}
 		}
 	} else {
 		for _, f := range fileList {
-			printPath(f, opts)
+			if verifyFirstTime(f.Name) {
+				printPath(f, opts)
+			}
 		}
 	}
 
