@@ -104,6 +104,10 @@ func GetVideoScore(bean *model.FileBean) (float64, error) {
 					return 0, nil
 				}
 				firstStream := streamList[0].(Json)
+				if !MapContains(firstStream, "height") || !MapContains(firstStream, "width") {
+					// Wasn't a height and width, so skip
+					return 0, nil
+				}
 				height := firstStream["height"].(float64)
 				width := firstStream["width"].(float64)
 				numPixels := duration * height * width
@@ -145,6 +149,10 @@ func GetPotentialBytesToCompress(bean *model.FileBean) int64 {
 					return 0
 				}
 				firstStream := streamList[0].(Json)
+				if !MapContains(firstStream, "height") || !MapContains(firstStream, "width") {
+					// Wasn't a height and width, so skip
+					return 0
+				}
 				height := firstStream["height"].(float64)
 				width := firstStream["width"].(float64)
 				numPixels := duration * height * width
@@ -217,4 +225,9 @@ func Unique[T any, K comparable](slice []T, accessor func(T) K) []T {
 		}
 	}
 	return list
+}
+
+func MapContains[K comparable, T any](m map[K]T, key K) bool {
+	_, ok := m[key]
+	return ok
 }
