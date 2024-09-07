@@ -2,6 +2,8 @@ module github.com/kamackay/all
 
 go 1.22.4
 
+toolchain go1.23.1
+
 require (
 	github.com/alecthomas/kong v0.2.11
 	github.com/dustin/go-humanize v1.0.0
